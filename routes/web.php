@@ -15,10 +15,17 @@
 
 
 
-Route::post('login', 'Auth\LoginController@login');
-Route::post('logout', 'Auth\LoginController@logout')->name('logout');
-Route::post('register', 'Auth\RegisterController@register');
+Route::post('session', 'Auth\LoginController@login')->name('login');
+Route::delete('session', 'Auth\LoginController@logout')->name('logout');
+Route::post('users', 'Auth\RegisterController@register');
 
 Route::get('/user', 'UserController@getUser');
 
 Route::get('/home', 'HomeController@index')->name('home');
+
+
+
+//ajax requests requiring a cookie with session id
+Route::group(['middleware' => ['ajaxAuth']], function () {
+        Route::post('/games', 'GameController@createGame');
+});

@@ -12,10 +12,11 @@ class UserController extends Controller
 {
     public function getUser(Request $request)
     {
-        Log::info($request->session()->all());
 
-        //Log::info(Auth::user());
         $user = Auth::user();
-        return response($user, 200);
+        if ($user){
+            return response($user, 200);
+        }
+        return response('', 404);
     }
 }

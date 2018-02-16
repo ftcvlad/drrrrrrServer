@@ -63,20 +63,17 @@ class LoginController extends Controller
 
     public function login(Request $request)
     {
-
         $validator = $this->validator($request->all());
         if ($validator->fails()){
-            return response("error", 422);
+            Log::info('validator!');
+            return response()->json(['msg' => 'Error!'], 401);
         }
         else{
             if ($this->attemptLogin($request)) {
-                $request->session()->put('hello', 1);
-                Log::info($request->session()->all());
                 $request->session()->save();
                 return $this->sendLoginResponse($request);
             }
 
-            //return response("Email or password incorrect", 401)->header('Content-Type', "application-json");
             return response()->json(['msg' => 'Email or password incorrect'], 401);
 
         }
@@ -118,7 +115,7 @@ class LoginController extends Controller
      */
     protected function sendLoginResponse(Request $request)
     {
-        //$request->session()->regenerate();
+        $request->session()->regenerate();
         return $this->authenticated($request, Auth::guard()->user());
     }
 
@@ -133,7 +130,7 @@ class LoginController extends Controller
     {
         Auth::guard()->logout();
         $request->session()->invalidate();
-        return redirect('/');
+        return response('', 204);
     }
 
 }
