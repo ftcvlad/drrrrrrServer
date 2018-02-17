@@ -21,7 +21,7 @@ Route::post('users', 'Auth\RegisterController@register');
 
 Route::get('/user', 'UserController@getUser');
 
-Route::get('/home', 'HomeController@index')->name('home');
+
 
 
 
@@ -29,3 +29,10 @@ Route::get('/home', 'HomeController@index')->name('home');
 Route::group(['middleware' => ['ajaxAuth']], function () {
         Route::post('/games', 'GameController@createGame');
 });
+
+//--------------WEB SOCKETS----------------
+
+Route::get('/websocket/open', 'WebSocketController@onOpen');
+Route::get('/websocket/message', 'WebSocketController@onMessage');
+Route::get('/websocket/close', 'WebSocketController@onClose');
+Route::get('/websocket/error', 'WebSocketController@onError');

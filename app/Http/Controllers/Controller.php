@@ -14,10 +14,6 @@ class Controller extends BaseController
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
 
 
-    public function fireEvent()
-    {
-        Log::info('yoyo');
-        //event(new ExampleEvent("new move data"));
-    }
+
 
 }

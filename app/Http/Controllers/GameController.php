@@ -14,8 +14,6 @@ class GameController extends Controller
 {
     public function createGame(CreateGameRequest $request){
 
-
-
         $games = Cache::get('games', []);
 
         $uuid = $this->generateUuid($games);
