@@ -7,8 +7,9 @@ require __DIR__ . '/../../vendor/autoload.php';
 use Ratchet\MessageComponentInterface;
 use Ratchet\ConnectionInterface;
 use Dflydev\FigCookies\Cookies;
-use Illuminate\Contracts\Http\Kernel;
-use Illuminate\Http\Request;
+
+use Illuminate\Support\Facades\Log;
+
 //adopted from https://gist.github.com/Mevrael/6855dd47d45fa34ee7161c8e0d2d0e88
 class WebSocketRequestCreator implements MessageComponentInterface
 {
@@ -22,8 +23,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
         /**
-         * @var \Ratchet\WebSocket\Version\RFC6455\Connection $con
-         * @var \Guzzle\Http\Message\Request $wsrequest
+         * @var \GuzzleHttp\Psr7\Request $wsrequest
          * @var \Illuminate\Http\Response $response
          */
         $params = [
@@ -47,32 +47,52 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
         $wsrequest = $con->httpRequest ;
         $cookies = Cookies::fromRequest($wsrequest)->getAll();
+        $allCookies = array();
+        foreach ($cookies as $cookie){
+            $allCookies[$cookie->getName()] = $cookie->getValue();
+        }
+
 
 
         $app = require __DIR__ . '/../../bootstrap/app.php';
-        $kernel = $app->make(Kernel::class);
+        $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
+
+        $request = \Illuminate\Http\Request::create($route, 'GET', $params, $allCookies);
+
+        // $con->send(json_encode(['ADDED TO REQUEST?!' => json_encode($request->cookies->all())]));
+
+        $response = $kernel->handle($request);
 
 
-        $response = $kernel->handle(
-            $request = Request::create($route, 'GET', $params,$cookies)
-        );
+//        $controllerResult = $response->getContent();
+//        $kernel->terminate($request, $response);
+//        return json_encode($controllerResult);
 
-        //var_dump(Auth::id());
-        $controllerResult = $response->getContent();
-        $kernel->terminate($request, $response);
-        return json_encode($controllerResult);
+
+        return $response;
+
+
+
     }
     public function onOpen(ConnectionInterface $con)
     {
 
-        $this->clients->attach($con);
-        $result = $this->handleLaravelRequest($con, '/websocket/open');
+        $response = $this->handleLaravelRequest($con, '/websocket/open');
 
-        $con->send(json_encode(['megawin' => $result]));
+
+        if ($response->status() == 401){
+            $con->send(json_encode(['connection closed' => 'not authorised!']));
+            $con->close();
+        }
+        else{
+            $this->clients->attach($con);
+        }
+
 
     }
     public function onMessage(ConnectionInterface $con, $msg)
     {
+        $con->send(json_encode(['onMessage#JoinRoomBack' => $msg]));
         //$this->handleLaravelRequest($con, '/websocket/message', $msg);
     }
     public function onClose(ConnectionInterface $con)

@@ -3,7 +3,6 @@
 namespace App\Http\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Closure;
-
 class CheckAuthenticated
 {
     /**
@@ -15,7 +14,6 @@ class CheckAuthenticated
      */
     public function handle($request, Closure $next)
     {
-
         if (!Auth::check()){
             return response()->json(['msg' => 'Unauthorized!'], 401);
         }

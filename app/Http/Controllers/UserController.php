@@ -12,7 +12,6 @@ class UserController extends Controller
 {
     public function getUser(Request $request)
     {
-
         $user = Auth::user();
         if ($user){
             return response($user, 200);

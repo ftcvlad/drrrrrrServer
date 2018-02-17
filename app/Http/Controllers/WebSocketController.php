@@ -32,18 +32,13 @@ class WebSocketController
     }
     public function onOpen(Request $request)
     {
-        //Log::info("^^^^^^^^^^ onOpen controller");
-        return "total win!!!";
-//        if (!Auth::check()) {
-//            $this->currentClient->close();
-//            return;
-//        }
-//        echo 'Opened' . PHP_EOL;
-//        echo $request->ip() . PHP_EOL;
-//        $this->sendToOthers([
-//            'type' => 'USER_CONNECTED',
-//        ]);
+        if (Auth::check()) {
+            return response('', 204);
+        }
+
+        return response()->json(['msg' => 'unauthorised'], 401);
     }
+
     public function onMessage(Request $request)
     {
 //        if (!Auth::check()) {
