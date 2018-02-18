@@ -76,6 +76,18 @@ class WebSocketController
                 }
             }
         }
+        else if ($msgType == MessageTypes::BROADCAST_GAME_CREATED){
+            $myId = Auth::id();
+            $targetGame = GamesManager::findGameInWhichUserParticipates($myId);
+
+            if ($targetGame != null){
+
+                return response()->json(['game'=>$targetGame, 'creatorId' => $myId], 200);
+            }
+            else{
+                return response()->json(['msg' => 'game wasnt created! impossible happened'], 403);
+            }
+        }
     }
 
 

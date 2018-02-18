@@ -127,7 +127,20 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
             //return most recent relevant game info
 
-            $con->send(json_encode(['servMessType'=>MessageTypes::JOINED_ROOM, 'data' => $contAssocArray['games'], 'status'=>200]));
+            $con->send(json_encode(['servMessType'=>MessageTypes::JOINED_ROOM, 'room'=>$roomToJoin, 'data' => $contAssocArray['games'], 'status'=>200]));
+        }
+        else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){
+            $myId = $contAssocArray['creatorId'];
+            foreach ($this->clients as $client){
+                if ($client['room'] == RoomCategories::TABLE_64_ROOM && $client['userId'] != $myId ){
+                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::BROADCAST_GAME_CREATED,
+                        'data' => $contAssocArray['game'],
+                        'status'=>200]));
+                }
+            }
+
+
+
         }
 
 
@@ -136,7 +149,6 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
     }
-
 
 
 

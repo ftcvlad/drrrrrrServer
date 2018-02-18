@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Util\GamesManager;
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -10,6 +11,7 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\CreateGameRequest;
 use App\User;
 use App\Game;
+
 
 class GameController extends Controller
 {
@@ -34,8 +36,6 @@ class GameController extends Controller
 
         $games[] = $createdGame;
         Cache::forever('games', $games);
-
-
 
 
         return response(json_encode(get_object_vars($createdGame)), 201);

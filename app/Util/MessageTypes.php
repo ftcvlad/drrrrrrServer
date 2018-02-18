@@ -14,4 +14,5 @@ abstract class MessageTypes
     const JOIN_ROOM = "joinRoom";
     const JOINED_ROOM = "joinedRoom";
     const ERROR = "error";
+    const BROADCAST_GAME_CREATED = "broadcastGameCreated";
 }
