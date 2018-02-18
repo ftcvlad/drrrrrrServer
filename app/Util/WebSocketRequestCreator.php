@@ -9,6 +9,8 @@ use Ratchet\ConnectionInterface;
 use Dflydev\FigCookies\Cookies;
 
 use Illuminate\Support\Facades\Log;
+use App\Util\MessageTypes;
+use App\Util\RoomCategories;
 
 //adopted from https://gist.github.com/Mevrael/6855dd47d45fa34ee7161c8e0d2d0e88
 class WebSocketRequestCreator implements MessageComponentInterface
@@ -16,19 +18,14 @@ class WebSocketRequestCreator implements MessageComponentInterface
     protected $clients;
     public function __construct() {
         echo 'Creating app...' . PHP_EOL;
-        $this->clients = new \SplObjectStorage;
+        $this->clients = array();
     }
     protected function handleLaravelRequest(ConnectionInterface $con, $route, $data = null)
     {
 
 
-        /**
-         * @var \GuzzleHttp\Psr7\Request $wsrequest
-         * @var \Illuminate\Http\Response $response
-         */
         $params = [
-            'connection' => $con,
-            'other_clients' => [],
+            'other_clients' => []
         ];
         if ($data !== null) {
             if (is_string($data)) {
@@ -38,10 +35,10 @@ class WebSocketRequestCreator implements MessageComponentInterface
             }
         }
         foreach ($this->clients as $client) {
-            if ($con != $client) {
-                $params['other_clients'][] = $client;
+            if ($con != $client['conn']) {
+                $params['other_clients'][] = $client['conn'];
             } else {
-                $params['current_client'] = $client;
+                $params['current_client'] = $client['conn'];
             }
         }
 
@@ -63,12 +60,6 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
         $response = $kernel->handle($request);
 
-
-//        $controllerResult = $response->getContent();
-//        $kernel->terminate($request, $response);
-//        return json_encode($controllerResult);
-
-
         return $response;
 
 
@@ -80,25 +71,84 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $response = $this->handleLaravelRequest($con, '/websocket/open');
 
 
-        if ($response->status() == 401){
-            $con->send(json_encode(['connection closed' => 'not authorised!']));
+        if ($response->status() == 401){//user has not supplied session cookie
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR ,'msg' => 'not authorised!', 'status'=>401]));
             $con->close();
+            return;
         }
-        else{
-            $this->clients->attach($con);
+
+        $contAssocArray = json_decode($response->getContent(),true);
+
+
+        $currentUserId = $contAssocArray['userId'];//prevent >1 socket connections from 1 user
+        foreach ($this->clients as $client){
+            if ($client['userId'] == $currentUserId ){
+                $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'msg' => 'user already has open connection', 'status'=>403]));
+                $con->close();
+                return;
+            }
+        }
+
+
+
+        if (!array_key_exists($con->resourceId, $this->clients)){
+            $this->clients[$con->resourceId] = array('conn'=>$con, 'room'=>'', 'userId'=>$currentUserId);
         }
 
 
     }
+
+
     public function onMessage(ConnectionInterface $con, $msg)
     {
-        $con->send(json_encode(['onMessage#JoinRoomBack' => $msg]));
-        //$this->handleLaravelRequest($con, '/websocket/message', $msg);
+
+        $messageType = json_decode($msg,true)['msgType'];
+        $response = $this->handleLaravelRequest($con, '/websocket/message', $msg);
+        $contAssocArray = json_decode($response->getContent(),true);
+
+
+        if ($response->status() == 401){//unauthorised
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'msg' => $contAssocArray['msg'], 'status' =>401]));
+            $con->close();
+            return;
+        }
+        else if ($response->status() == 403){//authorised, but cannot send this message (e.g. when not in game and trying to join game room)
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'msg' => $contAssocArray['msg'], 'status'=>403]));
+            return;
+        }
+
+
+        // print_r($contAssocArray['games']);
+
+        if ($messageType == MessageTypes::JOIN_ROOM){
+
+            $roomToJoin = $contAssocArray['room'];
+            $this->clients[$con->resourceId]['room'] = $roomToJoin;
+
+            //return most recent relevant game info
+
+            $con->send(json_encode(['servMessType'=>MessageTypes::JOINED_ROOM, 'data' => $contAssocArray['games'], 'status'=>200]));
+        }
+
+
+
+
+
+
     }
+
+
+
+
+
+
+
     public function onClose(ConnectionInterface $con)
     {
         //$this->handleLaravelRequest($con, '/websocket/close');
        //$this->clients->detach($con);
+
+        unset($this->clients[$con->resourceId]);
     }
     public function onError(ConnectionInterface $con, \Exception $e)
     {

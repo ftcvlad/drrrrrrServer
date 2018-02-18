@@ -6,12 +6,16 @@ use Illuminate\Support\Facades\Cookie;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Log;
+use App\Util\GamesManager;
+use App\Util\MessageTypes;
+use App\Util\RoomCategories;
+
+
 
 //adopted from https://gist.github.com/Mevrael/6855dd47d45fa34ee7161c8e0d2d0e88
 class WebSocketController
 {
 
-    protected $connection = null;
 
     protected $data = [];
 
@@ -20,10 +24,13 @@ class WebSocketController
     protected $otherClients = [];
     public function __construct(Request $request)
     {
-        $this->connection = $request->get('connection');
+
         $this->data = $request->get('data');
         $this->currentClient = $request->get('current_client');
         $this->otherClients = $request->get('other_clients');
+
+
+
     }
     public function sendToOthers(array $data) {
         foreach ($this->otherClients as $client) {
@@ -33,38 +40,62 @@ class WebSocketController
     public function onOpen(Request $request)
     {
         if (Auth::check()) {
-            return response('', 204);
+            return response()->json(['userId' => Auth::id()], 200);
         }
 
         return response()->json(['msg' => 'unauthorised'], 401);
     }
 
+
+
     public function onMessage(Request $request)
     {
-//        if (!Auth::check()) {
-//            $this->currentClient->close();
-//            return;
-//        }
-//        echo 'New message' . PHP_EOL;
-//        echo $request->ip() . PHP_EOL;
-//        $this->sendToOthers([
+
+        if (!Auth::check()) {
+            return response()->json(['msg' => 'unauthorised'], 401);
+        }
+
+        //print_r($this->data->msgType);
+        $msgType = $this->data->msgType;
+        if ($msgType == MessageTypes::JOIN_ROOM){
+            $category = $this->data->roomCategory;
+            if ($category == RoomCategories::TABLE_64_ROOM || $category == RoomCategories::TABLE_100_ROOM){
+                $games = GamesManager::findGamesByCategory($category);
+
+                return response()->json(['room' => $category, 'games'=>$games], 200);
+            }
+            else if ($category == RoomCategories::GAME_ROOM){
+                $targetGame = GamesManager::findGameInWhichUserParticipates(Auth::id());
+
+                if ($targetGame != null){
+
+                    return response()->json(['room' => $targetGame->gameId, 'games'=>[$targetGame]], 200);
+                }
+                else{
+                    return response()->json(['msg' => 'player has to join game to join socket room!'], 403);//!!! properly handle this?
+                }
+            }
+        }
+    }
+
+
+
+
+    public function onClose(Request $request)
+    {
+
+    }
+    public function onError(Request $request)
+    {
+
+    }
+
+
+    //        $this->sendToOthers([
 //            'type' => 'MESSAGE_RECEIVED',
 //            'data' => [
 //                'user' => Auth::user()->name,
 //                'message' => $this->data->message,
 //            ]
 //        ]);
-    }
-    public function onClose(Request $request)
-    {
-//        echo 'Closed' . PHP_EOL;
-//        echo $request->ip() . PHP_EOL;
-//        $this->sendToOthers([
-//            'type' => 'USER_DISCONNECTED',
-//        ]);
-    }
-    public function onError(Request $request)
-    {
-//        echo 'Error' . PHP_EOL;
-    }
 }

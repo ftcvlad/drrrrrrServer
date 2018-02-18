@@ -28,6 +28,7 @@ Route::get('/user', 'UserController@getUser');
 //ajax requests requiring a cookie with session id
 Route::group(['middleware' => ['ajaxAuth']], function () {
         Route::post('/games', 'GameController@createGame');
+        Route::delete('/games', 'GameController@removeAllGames');
 });
 
 //--------------WEB SOCKETS----------------
