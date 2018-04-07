@@ -16,8 +16,18 @@ TODO
 3) react-redux-fetch is missing fetch options. Wait if resolved or npm install from fork!
 https://stackoverflow.com/questions/40528053/npm-install-and-build-of-forked-github-repo
 fetchRequest, container, requestBuilder
-4) SESSION_LIFETIME in env back to 120?
+4) SESSION_LIFETIME in env back to 120? 
 
 
 Questions 
 1) which auth they use? api token? passport? jwt?
+
+
+,
+        {
+            test: /\.(png|jpg|ttf|...)$/,
+            use: [
+                { loader: 'url-loader' }
+                // limit => file.size =< 8192 bytes ? DataURI : File
+            ]
+        }

@@ -17,6 +17,7 @@ class Game
     public $watchers = [];
     public $moves = [];
     public $boardState;
+    public $isGameGoing;
 
 
     function __construct($uuid, $playerId, $boardState)
@@ -24,6 +25,7 @@ class Game
         $this->gameId = $uuid;
         $this->players[] = $playerId;
         $this->boardState = $boardState;
+        $this->isGameGoing = false;
 
     }
 

@@ -108,12 +108,12 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
         if ($response->status() == 401){//unauthorised
-            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'msg' => $contAssocArray['msg'], 'status' =>401]));
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status' =>401]));
             $con->close();
             return;
         }
         else if ($response->status() == 403){//authorised, but cannot send this message (e.g. when not in game and trying to join game room)
-            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'msg' => $contAssocArray['msg'], 'status'=>403]));
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status'=>403]));
             return;
         }
 
@@ -138,8 +138,23 @@ class WebSocketRequestCreator implements MessageComponentInterface
                         'status'=>200]));
                 }
             }
+        }
+        else if ($messageType == MessageTypes::BROADCAST_PLAYER_JOINED){//<-- problem here!!! :)
 
 
+            $myId = $contAssocArray['playerId'];
+            $game = $contAssocArray['game'];
+
+            foreach ($this->clients as $client){
+
+                if ($client['userId'] != $myId &&
+                    ($client['room'] == RoomCategories::TABLE_64_ROOM || $client['room'] == $game['gameId']   )){
+
+                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::BROADCAST_PLAYER_JOINED,
+                        'data' => $contAssocArray['game'],
+                        'status'=>200]));
+                }
+            }
 
         }
 

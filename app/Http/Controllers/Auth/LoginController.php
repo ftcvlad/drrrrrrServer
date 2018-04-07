@@ -66,7 +66,7 @@ class LoginController extends Controller
         $validator = $this->validator($request->all());
         if ($validator->fails()){
             Log::info('validator!');
-            return response()->json(['msg' => 'Error!'], 401);
+            return response()->json(['message' => 'Error!'], 401);
         }
         else{
             if ($this->attemptLogin($request)) {
@@ -74,7 +74,7 @@ class LoginController extends Controller
                 return $this->sendLoginResponse($request);
             }
 
-            return response()->json(['msg' => 'Email or password incorrect'], 401);
+            return response()->json(['message' => 'Email or password incorrect'], 401);
 
         }
 
