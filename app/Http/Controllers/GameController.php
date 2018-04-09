@@ -41,8 +41,9 @@ class GameController extends Controller
 
 
 
-    public function removeAllGames(Request $request){
-        Cache::forget('games');
+    public function removeAllGames(Request $request, GamesManager $gm){
+
+        $gm->removeAllGames();
         return response('', 204);
 
     }

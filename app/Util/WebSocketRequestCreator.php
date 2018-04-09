@@ -116,6 +116,9 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status'=>403]));
             return;
         }
+        else if ($response->status() == 204){//nothing to send as content
+            return;
+        }
 
 
         // print_r($contAssocArray['games']);
@@ -155,6 +158,19 @@ class WebSocketRequestCreator implements MessageComponentInterface
                         'status'=>200]));
                 }
             }
+
+        }
+        else if ($messageType == MessageTypes::USER_PICK){
+            $myId = $contAssocArray['playerId'];
+            foreach ($this->clients as $client){
+                if ($client['userId'] == $myId){
+                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_PICKED,
+                        'data' => $contAssocArray['game'],
+                        'status'=>200]));
+                    break;
+                }
+            }
+
 
         }
 

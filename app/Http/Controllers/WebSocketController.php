@@ -99,12 +99,22 @@ class WebSocketController
                 return response()->json(['game'=>$targetGame, 'playerId'=>Auth::id()], 200);
             }
         }
-        else if ($msgType == MessageTypes::USER_MOVE){
+        else if ($msgType == MessageTypes::USER_PICK){
             $row = $this->data->moveInfo->r;
             $column = $this->data->moveInfo->c;
+            $gameId = $this->data->gameId;
             $userId = Auth::id();
 
-            $gm->makeMove($row, $column, $userId);
+
+
+
+            $updatedGame = $gm->userPick($row, $column, $userId, $gameId);
+            if ($updatedGame == null){//pick not possible
+                return response()->json([], 204);
+            }
+            else{
+                return response()->json(['game'=>$updatedGame, 'playerId'=>$userId], 200);
+            }
 
 
 

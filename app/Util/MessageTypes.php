@@ -17,4 +17,6 @@ abstract class MessageTypes
     const BROADCAST_GAME_CREATED = "broadcastGameCreated";
     const BROADCAST_PLAYER_JOINED = "broadcastPlayerJoined";
     const USER_MOVE = "userMove";
+    const USER_PICK = "userPick";
+    const USER_PICKED = "userPicked";
 }
