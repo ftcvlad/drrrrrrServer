@@ -13,7 +13,8 @@ use App\Game;
 
 class GamesManager
 {
-
+    //games -- stores uuids of all games
+    //13223dfdf -- each game is stored separately in cache (key: uuid, value:game)
     public function createGame($userId)
     {
 
