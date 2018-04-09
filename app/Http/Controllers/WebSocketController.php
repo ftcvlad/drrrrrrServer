@@ -105,9 +105,6 @@ class WebSocketController
             $gameId = $this->data->gameId;
             $userId = Auth::id();
 
-
-
-
             $updatedGame = $gm->userPick($row, $column, $userId, $gameId);
             if ($updatedGame == null){//pick not possible
                 return response()->json([], 204);
@@ -118,6 +115,21 @@ class WebSocketController
 
 
 
+        }
+        else if ($msgType == MessageTypes::USER_MOVE){
+            $row = $this->data->moveInfo->r;
+            $column = $this->data->moveInfo->c;
+            $gameId = $this->data->gameId;
+            $userId = Auth::id();
+
+            $result = $gm->userMoveWrapper($row, $column, $userId, $gameId);
+
+            if ($result == null){
+                return response()->json([], 204);
+            }
+            else{
+                 return response()->json(['game'=>$result["game"], 'playerId'=>$userId, 'emitEvent'=>$result["emitEvent"]], 200);
+            }
         }
     }
 

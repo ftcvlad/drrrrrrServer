@@ -203,9 +203,6 @@ class GamesManager
                          }
                      }
 
-
-
-
                     if (count($possibleGoChoices) == 0) {//if no go options
                         return null;//move not allowed
                     }
@@ -226,6 +223,48 @@ class GamesManager
         }
         else{
             return null;
+        }
+
+
+    }
+
+    public function userMoveWrapper($row, $column, $userId, $gameId){
+
+        $gameStr = Cache::get($gameId);
+        if ($gameStr == null){
+            return null;//move not allowed!
+        }
+        $game = unserialize($gameStr);
+
+        $result = $this->userMove($row, $column, $userId, $game);
+
+        if ($result != null){
+            Cache::forever($gameId, serialize($game));
+        }
+        return $result;
+    }
+
+    public function userMove($row, $column, $userId, &$game){
+
+
+        if ($game->isGameGoing && $game->players[$game->currentPlayer] == $userId) {//if user's turn
+            if ($game->selectChecker == false){
+
+
+
+                $moveInf = array("row"=>$row, "column"=>$column);
+
+                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1] && count($game->itemsToDelete) == 0){//stopped at start position and deleted nothing
+                    $game->selectChecker = true;
+                    $game->pickedChecker = [];
+                    $game->possibleGoChoices = [];
+                    return array("emitEvent"=>MessageTypes::USER_PICKED, "game"=>$game);
+                }
+
+
+
+            }
+
         }
 
 

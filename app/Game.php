@@ -22,6 +22,7 @@ class Game
     public $selectChecker;
     public $possibleGoChoices;
     public $pickedChecker = [];//row, col
+    public $itemsToDelete = [];
 
 
     function __construct($uuid, $playerId, $boardState)
@@ -32,7 +33,7 @@ class Game
         $this->isGameGoing = false;
 
         $this->selectChecker = true;
-        $this->currentPlayer = 1;
+        $this->currentPlayer = 0;
         $this->possibleGoChoices = [];
 
 

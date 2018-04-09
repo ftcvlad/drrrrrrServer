@@ -173,6 +173,21 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
         }
+        else if ($messageType == MessageTypes::USER_MOVE){
+            $myId = $contAssocArray['playerId'];
+            $emitEvent = $contAssocArray['emitEvent'];
+            if ($emitEvent == MessageTypes::USER_PICKED){//unpicked piece
+                foreach ($this->clients as $client){
+                    if ($client['userId'] == $myId){
+                        $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_PICKED,
+                            'data' => $contAssocArray['game'],
+                            'status'=>200]));
+                        break;
+                    }
+                }
+            }
+
+        }
 
 
 
