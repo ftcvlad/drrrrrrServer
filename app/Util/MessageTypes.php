@@ -16,4 +16,5 @@ abstract class MessageTypes
     const ERROR = "error";
     const BROADCAST_GAME_CREATED = "broadcastGameCreated";
     const BROADCAST_PLAYER_JOINED = "broadcastPlayerJoined";
+    const USER_MOVE = "userMove";
 }

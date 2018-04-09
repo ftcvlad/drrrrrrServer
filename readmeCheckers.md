@@ -19,15 +19,8 @@ fetchRequest, container, requestBuilder
 4) SESSION_LIFETIME in env back to 120? 
 
 
+5) replace file cache with redis. handle games concurrency!!! Store each game separately?
+
 Questions 
 1) which auth they use? api token? passport? jwt?
 
-
-,
-        {
-            test: /\.(png|jpg|ttf|...)$/,
-            use: [
-                { loader: 'url-loader' }
-                // limit => file.size =< 8192 bytes ? DataURI : File
-            ]
-        }

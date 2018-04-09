@@ -99,6 +99,16 @@ class WebSocketController
                 return response()->json(['game'=>$targetGame, 'playerId'=>Auth::id()], 200);
             }
         }
+        else if ($msgType == MessageTypes::USER_MOVE){
+            $row = $this->data->moveInfo->r;
+            $column = $this->data->moveInfo->c;
+            $userId = Auth::id();
+
+            $gm->makeMove($row, $column, $userId);
+
+
+
+        }
     }
 
 

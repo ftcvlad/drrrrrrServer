@@ -18,6 +18,9 @@ class Game
     public $moves = [];
     public $boardState;
     public $isGameGoing;
+    public $currentPlayer;
+    public $selectChecker;
+    public $possibleGoChoices;
 
 
     function __construct($uuid, $playerId, $boardState)
@@ -26,6 +29,10 @@ class Game
         $this->players[] = $playerId;
         $this->boardState = $boardState;
         $this->isGameGoing = false;
+
+        $this->selectChecker = true;
+        $this->currentPlayer = 0;
+        $this->possibleGoChoices = [];
 
     }
 

@@ -14,9 +14,11 @@ use App\Game;
 class GamesManager
 {
 
-    public function createGame($userId){
+    public function createGame($userId)
+    {
 
         $games = Cache::get('games', []);
+
 
         //!!! make sure user is not in some game already
         $currentGame = $this->findGameInWhichUserParticipates($userId);
@@ -36,12 +38,10 @@ class GamesManager
     }
 
 
-    public function playGame($gameId, $playerId){
+    public function playGame($gameId, $playerId)
+    {
 
         $games = Cache::get('games', []);
-
-
-
         foreach ($games as $game){
             if ($game->gameId == $gameId){
 
@@ -60,10 +60,6 @@ class GamesManager
 
         abort(403, 'game doesn\'t exist ');
 
-
-
-
-
     }
 
 
@@ -71,7 +67,8 @@ class GamesManager
 
 
 
-    public function findGameInWhichUserParticipates($userId){
+    public function findGameInWhichUserParticipates($userId)
+    {
 
         $games = Cache::get('games', []);
         foreach ($games as $game){
@@ -82,7 +79,8 @@ class GamesManager
         return null;
     }
 
-    private function generateUuid(&$games){
+    private function generateUuid(&$games)
+    {
 
         $success = false;
         while(!$success){
@@ -98,7 +96,8 @@ class GamesManager
         return $uuid;
 
     }
-    private  function createStartGrid (){
+    private  function createStartGrid ()
+    {
         return [[0, -1, 0, -1, 0, -1, 0, -1],
             [-1, 0, -1, 0, -1, 0, -1, 0],
             [0, -1, 0, -1, 0, -1, 0, -1],
@@ -115,12 +114,14 @@ class GamesManager
 
 
 
-    public function  findGamesByCategory($category){//!!! when will be multiple categories, filter
+    public function  findGamesByCategory($category)//!!! when will be multiple categories, filter
+    {
         return Cache::get('games', []);
     }
 
 
-    public function findGameByGameId($gameId){
+    public function findGameByGameId($gameId)
+    {
         $games = Cache::get('games',[]);
         foreach ($games as $game){
             if ($game->gameId == $gameId){
@@ -128,6 +129,13 @@ class GamesManager
             }
         }
         return null;
+    }
+
+
+    //********************** MOVEMENT of pieces **********************
+
+    public function makeMove($row, $column, $userId){
+
     }
 
 }
