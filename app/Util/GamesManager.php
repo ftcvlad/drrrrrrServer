@@ -274,7 +274,6 @@ class GamesManager
 
                         //update grid on prev and next pos
 
-
                         if ($game->boardState[$prevPos["row"]][$prevPos["col"]] == 2 * $turnMultiplier ||
                             ($nextPos["row"] == 0 && $turnMultiplier == 1) ||
                             ($nextPos["row"] == 7 && $turnMultiplier == -1)) {
@@ -285,9 +284,6 @@ class GamesManager
                         $game->boardState[$prevPos["row"]][$prevPos["col"]] = 0;
 
                         $killed = $this->getDeletedCell($prevPos, $nextPos, $game->boardState);
-
-
-
 
                         //3 FUCKING OPTIONS!!!!!!!!!!!!!!!!!!!!!!!
                         if (count($killed) == 0) {//KILLED NONE
@@ -300,6 +296,60 @@ class GamesManager
                             $this->afterTurn($game, $turnMultiplier);
 
                             return array("boardChanged"=>true, "game"=>$game);
+
+                        }
+                        else {
+                            $game->itemsToDelete[] = array("row"=>$killed["row"],
+                                                            "col"=>$killed["col"],
+                                                            "type"=>$game->boardState[$killed["row"]][$killed["col"]]);
+                            $game->boardState[$killed["row"]][$killed["col"]] = 66;
+
+
+
+                            if ($game->boardState[$nextPos["row"]][$nextPos["col"]] === 2 * $turnMultiplier) {
+                                $game->possibleGoChoices = $this->getDamkaBeatOptions($nextPos["row"], $nextPos["col"], $game->boardState, 0, 0, $turnMultiplier);//cannot jump over 66
+                            }
+                            else {
+                                $game->possibleGoChoices = $this->getCheckerBeatOptions($nextPos["row"], $nextPos["col"], $game->boardState, $turnMultiplier);//cannot jump over 66
+                            }
+
+
+                            if (count( $game->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
+                                if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
+                                    $game->lastTurns = [];
+                                }
+                                $game->selectChecker = true;
+                                $game->pickedChecker = [];
+
+
+                                for ($i = 0; $i < count($game->itemsToDelete); $i++) {
+                                    $game->boardState[$game->itemsToDelete[$i]["row"]][$game->itemsToDelete[$i]["col"]] = 0;//get rid of 66
+                                }
+                                $game->itemsToDelete = [];
+                                $game->lastTurns[] = $prevPos;
+
+                                $this->afterTurn($game, $turnMultiplier);
+
+                                return array("boardChanged"=>true, "game"=>$game);
+                            }
+                            else {//KILLED AND STILL MORE TO KILL
+                                if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
+                                    $game->lastTurns = [];
+                                }
+
+
+                                $game->possibleGoChoices[] = $nextPos;//perveeeersed way to remember prevPos in possibleChoices. bad bad Vladislav
+
+
+                                $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];
+                                $game->lastTurns[] = $prevPos;
+
+                                //public $possibleGoChoices;//!!! last just saves prevPos, but on client uses them
+
+
+                                return array("boardChanged"=>true, "game"=>$game);
+                             }
+
 
                         }
 

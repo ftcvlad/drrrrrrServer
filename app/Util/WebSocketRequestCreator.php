@@ -190,8 +190,8 @@ class WebSocketRequestCreator implements MessageComponentInterface
             }
             else if ($boardChanged){//moved checker
                 foreach ($this->clients as $client){
-                    
-                    if ($client['room'] == $contAssocArray['game']['gameId']){//!!!! why ['game']
+
+                    if ($client['room'] == $contAssocArray['game']['gameId']){
                         $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_MOVED,
                             'data' => $contAssocArray['game'],
                             'status'=>200]));
