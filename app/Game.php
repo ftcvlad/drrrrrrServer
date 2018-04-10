@@ -23,6 +23,7 @@ class Game
     public $possibleGoChoices;
     public $pickedChecker = [];//row, col
     public $itemsToDelete = [];
+    public $lastTurns = [];
 
 
     function __construct($uuid, $playerId, $boardState)
