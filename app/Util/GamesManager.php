@@ -266,10 +266,10 @@ class GamesManager
                     $turnMultiplier = -1;
                 }
 
-                for ($i = 0; $i < count($game->possibleGoChoices) - 1; $i++) {
+                for ($i = 0; $i < count($game->possibleGoChoices); $i++) {
                     if ($moveInf === $game->possibleGoChoices[$i]) {
-
-                        $prevPos = $game->possibleGoChoices[count($game->possibleGoChoices) - 1];
+                        
+                        $prevPos = array("row"=>$game->pickedChecker[0], "col"=>$game->pickedChecker[1]);
                         $nextPos = $moveInf;
 
                         //update grid on prev and next pos
@@ -292,6 +292,7 @@ class GamesManager
                             $game->lastTurns = [$prevPos];
                             $game->itemsToDelete = [];
                             $game->pickedChecker = [];
+                            $game->possibleGoChoices = [];
 
                             $this->afterTurn($game, $turnMultiplier);
 
@@ -337,14 +338,10 @@ class GamesManager
                                     $game->lastTurns = [];
                                 }
 
-
-                                $game->possibleGoChoices[] = $nextPos;//perveeeersed way to remember prevPos in possibleChoices. bad bad Vladislav
-
-
                                 $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];
                                 $game->lastTurns[] = $prevPos;
 
-                                //public $possibleGoChoices;//!!! last just saves prevPos, but on client uses them
+
 
 
                                 return array("boardChanged"=>true, "game"=>$game);
