@@ -254,7 +254,8 @@ class GamesManager
 
                 $moveInf = array("row"=>$row, "col"=>$col);
 
-                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1] && count($game->itemsToDelete) == 0){//stopped at start position and deleted nothing
+
+                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1] && $game->moves[count($game->moves)-1]["finished"] == true){//stopped at start position and deleted nothing
                     $game->selectChecker = true;
                     $game->pickedChecker = [];
                     $game->possibleGoChoices = [];
@@ -289,11 +290,11 @@ class GamesManager
                         if (count($killed) == 0) {//KILLED NONE
 
                             $game->selectChecker = true;
-                            $game->lastTurns = [$prevPos];
-                            $game->itemsToDelete = [];
                             $game->pickedChecker = [];
                             $game->possibleGoChoices = [];
-                            $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>[], "player"=>$game->currentPlayer)];
+                            $game->moves[] = array("player"=>$game->currentPlayer,
+                                                    "finished"=>true,
+                                                    "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>[])]);
                             $this->afterTurn($game, $turnMultiplier);
 
                             return array("boardChanged"=>true, "game"=>$game);
@@ -302,9 +303,6 @@ class GamesManager
                         else {
 
                             $killed["type"] = $game->boardState[$killed["row"]][$killed["col"]];
-                            $game->itemsToDelete[] = array("row"=>$killed["row"],
-                                                            "col"=>$killed["col"],
-                                                            "type"=>$killed["type"]);
                             $game->boardState[$killed["row"]][$killed["col"]] = 66;
 
 
@@ -318,40 +316,42 @@ class GamesManager
 
 
                             if (count( $game->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
-                                if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
-                                    $game->lastTurns = [];
-                                    $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer)];//new move
+
+
+                                if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
+                                    $game->moves[] = array("player"=>$game->currentPlayer,//new move
+                                                            "finished"=>true,
+                                                            "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer);//continuing move
+                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed);//continuing move
+                                    $game->moves[count($game->moves)-1]["finished"] = true;
                                 }
                                 $game->selectChecker = true;
                                 $game->pickedChecker = [];
 
 
-                                for ($i = 0; $i < count($game->itemsToDelete); $i++) {
-                                    $game->boardState[$game->itemsToDelete[$i]["row"]][$game->itemsToDelete[$i]["col"]] = 0;//get rid of 66
+                                $moveInfo = $game->moves[count($game->moves)-1]["moveInfo"];
+                                for ($i = 0; $i < count($moveInfo); $i++) {
+                                    $game->boardState[$moveInfo[$i]["killed"]["row"]][$moveInfo[$i]["killed"]["col"]] = 0;//get rid of 66
                                 }
-                                $game->itemsToDelete = [];
-                                $game->lastTurns[] = $prevPos;
+
 
                                 $this->afterTurn($game, $turnMultiplier);
 
                                 return array("boardChanged"=>true, "game"=>$game);
                             }
                             else {//KILLED AND STILL MORE TO KILL
-                                if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
-                                    $game->lastTurns = [];
-                                    $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer)];//new move
+                                if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
+                                    $game->moves[] = array("player"=>$game->currentPlayer,//new move
+                                        "finished"=>false,
+                                        "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer);//continuing move
+                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed);//continuing move
                                 }
 
                                 $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];
-                                $game->lastTurns[] = $prevPos;
-
-
 
 
                                 return array("boardChanged"=>true, "game"=>$game);
