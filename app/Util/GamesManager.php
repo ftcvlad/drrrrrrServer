@@ -268,7 +268,7 @@ class GamesManager
 
                 for ($i = 0; $i < count($game->possibleGoChoices); $i++) {
                     if ($moveInf === $game->possibleGoChoices[$i]) {
-                        
+
                         $prevPos = array("row"=>$game->pickedChecker[0], "col"=>$game->pickedChecker[1]);
                         $nextPos = $moveInf;
 
@@ -293,16 +293,18 @@ class GamesManager
                             $game->itemsToDelete = [];
                             $game->pickedChecker = [];
                             $game->possibleGoChoices = [];
-
+                            $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>[], "player"=>$game->currentPlayer)];
                             $this->afterTurn($game, $turnMultiplier);
 
                             return array("boardChanged"=>true, "game"=>$game);
 
                         }
                         else {
+
+                            $killed["type"] = $game->boardState[$killed["row"]][$killed["col"]];
                             $game->itemsToDelete[] = array("row"=>$killed["row"],
                                                             "col"=>$killed["col"],
-                                                            "type"=>$game->boardState[$killed["row"]][$killed["col"]]);
+                                                            "type"=>$killed["type"]);
                             $game->boardState[$killed["row"]][$killed["col"]] = 66;
 
 
@@ -318,6 +320,10 @@ class GamesManager
                             if (count( $game->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
                                 if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
                                     $game->lastTurns = [];
+                                    $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer)];//new move
+                                }
+                                else{
+                                    $game->moves[count($game->moves)-1][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer);//continuing move
                                 }
                                 $game->selectChecker = true;
                                 $game->pickedChecker = [];
@@ -336,6 +342,10 @@ class GamesManager
                             else {//KILLED AND STILL MORE TO KILL
                                 if (count($game->itemsToDelete)==1){//remove only after 1st kill (then it is our, not enemy's turn)
                                     $game->lastTurns = [];
+                                    $game->moves[] = [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer)];//new move
+                                }
+                                else{
+                                    $game->moves[count($game->moves)-1][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "player"=>$game->currentPlayer);//continuing move
                                 }
 
                                 $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];
