@@ -294,7 +294,7 @@ class GamesManager
                             $game->possibleGoChoices = [];
                             $game->moves[] = array("player"=>$game->currentPlayer,
                                                     "finished"=>true,
-                                                    "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>[])]);
+                                                    "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>null)]);
                             $this->afterTurn($game, $turnMultiplier);
 
                             return array("boardChanged"=>true, "game"=>$game);
