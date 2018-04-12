@@ -23,6 +23,8 @@ class Game
     public $possibleGoChoices;
     public $pickedChecker = [];//row, col
 
+    public $chatMessages = []; //this game is more like a game table => also stores chat messages
+
 
     function __construct($uuid, $playerId, $boardState)
     {

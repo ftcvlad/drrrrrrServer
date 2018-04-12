@@ -20,4 +20,5 @@ abstract class MessageTypes
     const USER_MOVED = "userMoved";
     const USER_PICK = "userPick";
     const USER_PICKED = "userPicked";
+    const SEND_CHAT_MESSAGE = "sendChatMessage";
 }

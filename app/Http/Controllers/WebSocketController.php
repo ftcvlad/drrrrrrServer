@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Log;
 use App\Util\GamesManager;
 use App\Util\MessageTypes;
 use App\Util\RoomCategories;
-
+use Illuminate\Support\Facades\Cache;
 
 
 //adopted from https://gist.github.com/Mevrael/6855dd47d45fa34ee7161c8e0d2d0e88
@@ -129,6 +129,28 @@ class WebSocketController
             }
             else{
                  return response()->json(['game'=>$result["game"], 'playerId'=>$userId, 'boardChanged'=>$result["boardChanged"]], 200);
+            }
+        }
+        else if ($msgType == MessageTypes::SEND_CHAT_MESSAGE){
+            $messageText = $this->data->msgObj->msg;
+            $gameId = $this->data->gameId;
+            $userId = Auth::id();
+            $user = Auth::user();
+            $userEmail = $user->email;
+
+            Log::info($userEmail);
+
+            //check if sending user participates in the game
+            $game = $gm->findGameInWhichUserParticipates($userId);
+            if ($game==null || $game->gameId !== $gameId){
+                return response()->json(['message' => 'user must participate in game to send messages'], 403);
+            }
+            else{
+                $msg =  array("msgText"=>$messageText, "sender"=>$userEmail, "senderId"=>$userId);
+                $game->chatMessages[] = $msg;
+
+                Cache::forever($gameId, serialize($game));
+                return response()->json(['msg' => $msg, "gameId"=>$gameId], 200);
             }
         }
     }

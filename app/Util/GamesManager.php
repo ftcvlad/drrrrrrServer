@@ -77,6 +77,7 @@ class GamesManager
 
 
 
+
     public function findGameInWhichUserParticipates($userId)
     {
 
