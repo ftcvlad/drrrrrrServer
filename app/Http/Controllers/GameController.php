@@ -21,11 +21,15 @@ class GameController extends Controller
         $playerId = Auth::id();
 
         $currentGame = $gm->playGame($gameId, $playerId);
-
-
-
         return response(json_encode(get_object_vars($currentGame)), 200);
+    }
 
+    public function watchGame(PlayGameRequest $request, GamesManager $gm){
+        $gameId = $request->input('gameId');
+        $playerId = Auth::id();
+
+        $currentGame = $gm->watchGame($gameId, $playerId);
+        return response(json_encode(get_object_vars($currentGame)), 200);
     }
 
     public function createGame(CreateGameRequest $request, GamesManager $gm){

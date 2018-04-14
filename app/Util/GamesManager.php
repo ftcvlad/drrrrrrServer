@@ -10,6 +10,7 @@ namespace App\Util;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Game;
+use Illuminate\Support\Facades\Auth;
 
 class GamesManager
 {
@@ -27,7 +28,9 @@ class GamesManager
 
         $uuid = $this->generateUuid($gameIds);
         $boardState = $this->createStartGrid();
-        $createdGame = new Game($uuid, $userId, $boardState);
+
+        $player = $this->makePlayerObject($userId);
+        $createdGame = new Game($uuid, $userId, $boardState, $player);
 
 
         $gameIds[] = $uuid;
@@ -38,6 +41,10 @@ class GamesManager
         return $createdGame;
     }
 
+    private function makePlayerObject($playerId){
+        $username  = Auth::user()->email;//TODO make username mandatory?
+        return array("id"=>$playerId, "username"=>$username);
+    }
 
     public function playGame($gameId, $playerId)
     {
@@ -53,7 +60,7 @@ class GamesManager
                 abort(403, 'game is full');
             }
 
-            $game->players[] = $playerId;
+            $game->players[] = $this->makePlayerObject($playerId);
             $game->isGameGoing = true;
 
 
@@ -61,9 +68,26 @@ class GamesManager
             return $game;
         }
 
-
     }
 
+
+    public function watchGame($gameId, $playerId)
+    {
+        $gameStr = Cache::get($gameId, null);
+
+        if ($gameStr == null){
+            abort(403, 'game doesn\'t exist ');
+        }
+        else{
+            $game = unserialize($gameStr);
+
+            $game->watchers[] = $this->makePlayerObject($playerId);
+
+            Cache::forever($gameId, serialize($game));
+            return $game;
+        }
+
+    }
 
     public function removeAllGames(){
 
@@ -86,9 +110,20 @@ class GamesManager
             $gameStr = Cache::get($gameId, null);
             if ($gameStr != null){
                 $game = unserialize($gameStr);
-                if (in_array($userId,$game->players ) || in_array($userId,$game->watchers)){
-                    return $game;
+
+                foreach($game->players as $player) {
+                    if ($player["id"] == $userId) {
+                        return $game;
+                    }
                 }
+
+                foreach($game->watchers as $watcher) {
+                    if ($watcher["id"] == $userId) {
+                        return $game;
+                    }
+                }
+
+
             }
             else{
                 //assume in gameIds and games in sync, for each gameId there is game
@@ -173,7 +208,7 @@ class GamesManager
         $game = unserialize($gameStr);
 
 
-        if ($game->isGameGoing && $game->players[$game->currentPlayer] == $userId){//if user's turn
+        if ($game->isGameGoing && $game->players[$game->currentPlayer]["id"] == $userId){//if user's turn
 
             if ($game->selectChecker == true){//checker selection
 
@@ -248,7 +283,7 @@ class GamesManager
     public function userMove($row, $col, $userId, &$game){
 
 
-        if ($game->isGameGoing && $game->players[$game->currentPlayer] == $userId) {//if user's turn
+        if ($game->isGameGoing && $game->players[$game->currentPlayer]["id"] == $userId) {//if user's turn
             if ($game->selectChecker == false){
 
 
@@ -273,7 +308,7 @@ class GamesManager
 
                         $prevPos = array("row"=>$game->pickedChecker[0], "col"=>$game->pickedChecker[1]);
                         $nextPos = $moveInf;
-
+                        $prevType = $game->boardState[$prevPos["row"]][$prevPos["col"]];
                         //update grid on prev and next pos
 
                         if ($game->boardState[$prevPos["row"]][$prevPos["col"]] == 2 * $turnMultiplier ||
@@ -287,15 +322,17 @@ class GamesManager
 
                         $killed = $this->getDeletedCell($prevPos, $nextPos, $game->boardState);
 
+
                         //3 FUCKING OPTIONS!!!!!!!!!!!!!!!!!!!!!!!
                         if (count($killed) == 0) {//KILLED NONE
 
                             $game->selectChecker = true;
                             $game->pickedChecker = [];
                             $game->possibleGoChoices = [];
+
                             $game->moves[] = array("player"=>$game->currentPlayer,
                                                     "finished"=>true,
-                                                    "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>null)]);
+                                                    "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>null, "prevType"=>$prevType)]);
                             $this->afterTurn($game, $turnMultiplier);
 
                             return array("boardChanged"=>true, "game"=>$game);
@@ -322,10 +359,10 @@ class GamesManager
                                 if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
                                     $game->moves[] = array("player"=>$game->currentPlayer,//new move
                                                             "finished"=>true,
-                                                            "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed)]);
+                                                            "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed);//continuing move
+                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType);//continuing move
                                     $game->moves[count($game->moves)-1]["finished"] = true;
                                 }
                                 $game->selectChecker = true;
@@ -346,10 +383,10 @@ class GamesManager
                                 if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
                                     $game->moves[] = array("player"=>$game->currentPlayer,//new move
                                         "finished"=>false,
-                                        "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed)]);
+                                        "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed);//continuing move
+                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed,"prevType"=>$prevType);//continuing move
                                 }
 
                                 $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];

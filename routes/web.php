@@ -30,6 +30,7 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
         Route::post('/games', 'GameController@createGame');
         Route::delete('/games', 'GameController@removeAllGames');
         Route::put('/games/{id}/play', 'GameController@playGame');
+        Route::put('/games/{id}/watch', 'GameController@watchGame');
 });
 
 //--------------WEB SOCKETS----------------
