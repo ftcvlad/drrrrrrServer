@@ -31,7 +31,7 @@ class UserMove extends WebSocketController
             return response()->json([], 204);
         }
         else{
-            return response()->json(['game'=>$result["game"], 'playerId'=>$userId, 'boardChanged'=>$result["boardChanged"]], 200);
+            return response()->json(['game'=>$result["game"], 'boardChanged'=>$result["boardChanged"]], 200);
         }
     }
 

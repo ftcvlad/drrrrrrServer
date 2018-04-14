@@ -27,7 +27,7 @@ class BroadcastPlayerJoined extends WebSocketController
             return response()->json(['message' => 'game doesn\'t exist! impossible happened'], 403);
         }
         else{
-            return response()->json(['game'=>$targetGame, 'playerId'=>Auth::id()], 200);
+            return response()->json(['game'=>$targetGame], 200);
         }
     }
 

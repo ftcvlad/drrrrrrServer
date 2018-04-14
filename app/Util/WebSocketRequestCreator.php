@@ -100,7 +100,6 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $response = $this->handleLaravelRequest($con,  "/websocket/message/".$messageType, $msg);
         $contAssocArray = json_decode($response->getContent(),true);
 
-
         if ($response->status() == 401){//unauthorised
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status' =>401]));
             $con->close();
@@ -114,107 +113,74 @@ class WebSocketRequestCreator implements MessageComponentInterface
             return;
         }
 
-        //to
+        //self , table64-self, table64+play64-self, play64,
 
-        // print_r($contAssocArray['games']);
+
 
         if ($messageType == MessageTypes::JOIN_ROOM){
 
-            $roomToJoin = $contAssocArray['room'];
-            $this->clients[$con->resourceId]['room'] = $roomToJoin;
-
-            //return most recent relevant game info
-
-            $con->send(json_encode(['servMessType'=>MessageTypes::JOINED_ROOM, 'room'=>$roomToJoin, 'data' => $contAssocArray['games'], 'status'=>200]));
+            $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
+            $this->sendToSelf($con, $contAssocArray['games'], $messageType);
         }
         else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){
-            $myId = $contAssocArray['creatorId'];
-            foreach ($this->clients as $client){
-                if ($client['room'] == RoomCategories::TABLE_64_ROOM && $client['userId'] != $myId ){
-                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::BROADCAST_GAME_CREATED,
-                        'data' => $contAssocArray['game'],
-                        'status'=>200]));
-                }
-            }
+
+            $this->sendToTable64($contAssocArray['game'], $messageType);
         }
-        else if ($messageType == MessageTypes::BROADCAST_PLAYER_JOINED){//<-- problem here!!! :)
+        else if ($messageType == MessageTypes::BROADCAST_PLAYER_JOINED){
 
+            $this->sendToTable64($contAssocArray['game'], $messageType);
+            $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'], $messageType);
 
-            $myId = $contAssocArray['playerId'];
-            $game = $contAssocArray['game'];
-
-            foreach ($this->clients as $client){
-
-                if ($client['userId'] != $myId &&
-                    ($client['room'] == RoomCategories::TABLE_64_ROOM || $client['room'] == $game['gameId']   )){
-
-                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::BROADCAST_PLAYER_JOINED,
-                        'data' => $contAssocArray['game'],
-                        'status'=>200]));
-                }
-            }
 
         }
         else if ($messageType == MessageTypes::USER_PICK){
-            $myId = $contAssocArray['playerId'];
-            foreach ($this->clients as $client){
-                if ($client['userId'] == $myId){
-                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_PICKED,
-                        'data' => $contAssocArray['game'],
-                        'status'=>200]));
-                    break;
-                }
-            }
-
-
+            $this->sendToSelf($con, $contAssocArray['game'], $messageType);
         }
         else if ($messageType == MessageTypes::USER_MOVE){
-            $myId = $contAssocArray['playerId'];
             $boardChanged = $contAssocArray['boardChanged'];
 
-
             if (!$boardChanged){//unpicked piece
-                foreach ($this->clients as $client){
-                    if ($client['userId'] == $myId){
-                        $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_PICKED,
-                            'data' => $contAssocArray['game'],
-                            'status'=>200]));
-                        break;
-                    }
-                }
+                $this->sendToSelf($con, $contAssocArray['game'], $messageType);
             }
             else if ($boardChanged){//moved checker
-                foreach ($this->clients as $client){
-
-                    if ($client['room'] == $contAssocArray['game']['gameId']){
-                        $client['conn']->send(json_encode(['servMessType'=>MessageTypes::USER_MOVED,
-                            'data' => $contAssocArray['game'],
-                            'status'=>200]));
-                    }
-                }
+                $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'], $messageType);
             }
 
         }
         else if ($messageType == MessageTypes::SEND_CHAT_MESSAGE){
-            $gameId = $contAssocArray['gameId'];
-            foreach ($this->clients as $client){
-                if ($client['room'] == $gameId){
-                    $client['conn']->send(json_encode(['servMessType'=>MessageTypes::SEND_CHAT_MESSAGE,
-                        'data' => $contAssocArray['msg'],
-                        'gameId'=>$gameId,
-                        'status'=>200]));
-                }
-
-            }
+            $this->sendToPlay64($contAssocArray['gameId'],$contAssocArray, $messageType);
         }
-
-
 
 
 
 
     }
 
+    private function sendToTable64(&$data, $messageType){
+        foreach ($this->clients as $client){
+            if ($client['room'] == RoomCategories::TABLE_64_ROOM ){
+                $client['conn']->send(json_encode(['servMessType'=>$messageType,
+                    'data' => $data,
+                    'status'=>200]));
+            }
+        }
+    }
+
+
+    private function sendToSelf(&$con, &$data, $messageType){
+        $con->send(json_encode(['servMessType'=>$messageType, 'data' => $data, 'status'=>200]));
+    }
+
+    private function sendToPlay64($gameId, &$data, $messageType){
+        foreach ($this->clients as $client){
+            if ($client['room'] == $gameId){
+                $client['conn']->send(json_encode(['servMessType'=>$messageType,
+                    'data' => $data,
+                    'status'=>200]));
+            }
+
+        }
+    }
 
 
 

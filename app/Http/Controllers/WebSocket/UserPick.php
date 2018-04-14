@@ -30,7 +30,7 @@ class UserPick extends WebSocketController
             return response()->json([], 204);
         }
         else{
-            return response()->json(['game'=>$updatedGame, 'playerId'=>$userId], 200);
+            return response()->json(['game'=>$updatedGame], 200);
         }
     }
 }
