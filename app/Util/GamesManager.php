@@ -18,13 +18,12 @@ class GamesManager
     //13223dfdf -- each game is stored separately in cache (key: uuid, value:game)
     public function createGame($userId)
     {
+        $this->ensureUserNotInGame($userId);
+
         $gameIds = Cache::get('gameIds', []);
 
-        //!!! make sure user is not in some game already
-        $currentGame = $this->findGameInWhichUserParticipates($userId);
-        if ($currentGame != null){
-            abort(403, 'cannot join > 1 game');//already in some game
-        }
+
+
 
         $uuid = $this->generateUuid($gameIds);
         $boardState = $this->createStartGrid();
@@ -46,8 +45,16 @@ class GamesManager
         return array("id"=>$playerId, "username"=>$username);
     }
 
+    private function ensureUserNotInGame($userId){//!!! make sure user is not in some game already
+        $currentGame = $this->findGameInWhichUserParticipates($userId);
+        if ($currentGame != null){
+            abort(403, 'cannot join > 1 game');
+        }
+    }
+
     public function playGame($gameId, $playerId)
     {
+        $this->ensureUserNotInGame($playerId);
 
         $gameStr = Cache::get($gameId, null);
 
@@ -73,6 +80,8 @@ class GamesManager
 
     public function watchGame($gameId, $playerId)
     {
+        $this->ensureUserNotInGame($playerId);
+
         $gameStr = Cache::get($gameId, null);
 
         if ($gameStr == null){

@@ -24,9 +24,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
     {
 
 
-        $params = [
-            'other_clients' => []
-        ];
+        $params = [];
         if ($data !== null) {
             if (is_string($data)) {
                 $params = ['data' => json_decode($data)];
@@ -34,13 +32,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 $params = ['data' => $data];
             }
         }
-        foreach ($this->clients as $client) {
-            if ($con != $client['conn']) {
-                $params['other_clients'][] = $client['conn'];
-            } else {
-                $params['current_client'] = $client['conn'];
-            }
-        }
+
 
         $wsrequest = $con->httpRequest ;
         $cookies = Cookies::fromRequest($wsrequest)->getAll();
@@ -99,11 +91,13 @@ class WebSocketRequestCreator implements MessageComponentInterface
     }
 
 
+
+
     public function onMessage(ConnectionInterface $con, $msg)
     {
 
         $messageType = json_decode($msg,true)['msgType'];
-        $response = $this->handleLaravelRequest($con, '/websocket/message', $msg);
+        $response = $this->handleLaravelRequest($con,  "/websocket/message/".$messageType, $msg);
         $contAssocArray = json_decode($response->getContent(),true);
 
 
@@ -120,6 +114,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
             return;
         }
 
+        //to
 
         // print_r($contAssocArray['games']);
 
