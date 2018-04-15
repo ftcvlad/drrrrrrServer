@@ -11,15 +11,19 @@ use App\Http\Controllers\WebSocketController;
 use App\Util\GamesManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\GameInfo;
 
 class BroadcastGameCreated extends WebSocketController
 {
+
     public function handleMessage(Request $request, GamesManager $gm){
         $myId = Auth::id();
         $targetGame = $gm->findGameInWhichUserParticipates($myId);
 
         if ($targetGame != null){
-            return response()->json(['game'=>$targetGame, 'creatorId' => $myId], 200);
+
+            $gameInfo = new GameInfo($targetGame->gameId, $targetGame->players, $targetGame->watchers);
+            return response()->json(['gameInfo'=>$gameInfo], 200);
         }
         else{
             return response()->json(['message' => 'game wasnt created! impossible happened'], 403);

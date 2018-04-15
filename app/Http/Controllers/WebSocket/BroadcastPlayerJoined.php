@@ -13,9 +13,11 @@ use App\Http\Controllers\WebSocketController;
 use App\Util\GamesManager;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Http\Request;
+use App\GameInfo;
 
 class BroadcastPlayerJoined extends WebSocketController
 {
+
 
     public function handleMessage(Request $request, GamesManager $gm){
 
@@ -27,7 +29,9 @@ class BroadcastPlayerJoined extends WebSocketController
             return response()->json(['message' => 'game doesn\'t exist! impossible happened'], 403);
         }
         else{
-            return response()->json(['game'=>$targetGame], 200);
+
+            $gameInfo = new GameInfo($targetGame->gameId, $targetGame->players, $targetGame->watchers);
+            return response()->json(['game'=>$targetGame, "gameInfo"=>$gameInfo], 200);
         }
     }
 

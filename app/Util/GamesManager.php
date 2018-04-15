@@ -300,7 +300,8 @@ class GamesManager
                 $moveInf = array("row"=>$row, "col"=>$col);
 
 
-                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1] && $game->moves[count($game->moves)-1]["finished"] == true){//stopped at start position and deleted nothing
+                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1]
+                            && (count($game->moves) == 0 || $game->moves[count($game->moves)-1]["finished"] == true)){//stopped at start position and deleted nothing
                     $game->selectChecker = true;
                     $game->pickedChecker = [];
                     $game->possibleGoChoices = [];

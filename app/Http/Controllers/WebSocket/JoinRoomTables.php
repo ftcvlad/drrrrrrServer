@@ -13,10 +13,18 @@ use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use App\Util\RoomCategories;
 use Illuminate\Support\Facades\Auth;
+use App\GameInfo;
 
-class JoinRoom extends WebSocketController
+class JoinRoomTables extends WebSocketController
 {
 
+    private function createGameInfoList(&$games){
+        $gameInfoArr = [];
+        foreach ($games as $game){
+            $gameInfoArr[] = new GameInfo($game->gameId, $game->players, $game->watchers);
+        }
+        return $gameInfoArr;
+    }
 
 
     public function handleMessage(Request $request, GamesManager $gm){
@@ -27,19 +35,9 @@ class JoinRoom extends WebSocketController
         if ($category == RoomCategories::TABLE_64_ROOM || $category == RoomCategories::TABLE_100_ROOM){
             $games = $gm->findGamesByCategory($category);
 
-            return response()->json(['room' => $category, 'games'=>$games], 200);
+            $gameList = $this->createGameInfoList($games);
+            return response()->json(['room' => $category, 'gameList'=>$gameList], 200);
         }
-        else if ($category == RoomCategories::GAME_ROOM){
 
-            $targetGame = $gm->findGameInWhichUserParticipates(Auth::id());
-
-            if ($targetGame != null){
-
-                return response()->json(['room' => $targetGame->gameId, 'games'=>[$targetGame]], 200);
-            }
-            else{
-                return response()->json(['message' => 'player has to join game to join socket room!'], 403);//!!! properly handle this?
-            }
-        }
     }
 }

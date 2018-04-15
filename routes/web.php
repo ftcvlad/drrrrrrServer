@@ -38,7 +38,8 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
 
 
 Route::group(['middleware' => ['ajaxAuth']], function () {
-    Route::get('/websocket/message/joinRoom', 'WebSocket\JoinRoom@handleMessage');
+    Route::get('/websocket/message/joinRoomPlay', 'WebSocket\JoinRoomPlay@handleMessage');
+    Route::get('/websocket/message/joinRoomTables', 'WebSocket\JoinRoomTables@handleMessage');
     Route::get('/websocket/message/broadcastGameCreated', 'WebSocket\BroadcastGameCreated@handleMessage');
     Route::get('/websocket/message/broadcastPlayerJoined', 'WebSocket\BroadcastPlayerJoined@handleMessage');
     Route::get('/websocket/message/userPick', 'WebSocket\UserPick@handleMessage');

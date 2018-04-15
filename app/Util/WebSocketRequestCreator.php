@@ -117,19 +117,25 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
 
-        if ($messageType == MessageTypes::JOIN_ROOM){
+        if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//+
 
             $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
-            $this->sendToSelf($con, $contAssocArray['games'], $messageType);
+            $this->sendToSelf($con, $contAssocArray['gameList'], $messageType);
         }
-        else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){
+        else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//+
+            $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
+            $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType);
+        }
+        else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){//+
 
-            $this->sendToTable64($contAssocArray['game'], $messageType);
+            $this->sendToTable64($contAssocArray['gameInfo'], $messageType);
         }
         else if ($messageType == MessageTypes::BROADCAST_PLAYER_JOINED){
 
-            $this->sendToTable64($contAssocArray['game'], $messageType);
-            $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'], $messageType);
+            $this->sendToTable64($contAssocArray['gameInfo'],
+                MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLES);
+            $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'],
+                MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLE);
 
 
         }
