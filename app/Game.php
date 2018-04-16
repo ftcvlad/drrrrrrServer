@@ -12,30 +12,22 @@ namespace App;
 class Game
 {
 
-    public $gameId;
-    public $players = [];
-    public $watchers = [];
-    public $moves = [];
-    public $boardState;
-    public $isGameGoing;
-    public $currentPlayer;
-    public $selectChecker;
-    public $possibleGoChoices;
-    public $pickedChecker = [];//row, col
-
+    public $gameInfo;
+    public $gameState;
     public $chatMessages = []; //this game is more like a game table => also stores chat messages
 
 
-    function __construct($uuid, $playerId, $boardState, $player)
+    function __construct($gameId, $boardState, $player)
     {
-        $this->gameId = $uuid;
-        $this->players[] = $player;
-        $this->boardState = $boardState;
-        $this->isGameGoing = false;
+        $this->gameInfo = new GameInfo($gameId, $player);
+        $this->gameState = new GameState($boardState);
 
-        $this->selectChecker = true;
-        $this->currentPlayer = 0;
-        $this->possibleGoChoices = [];
+
+
+
+
+
+
 
 
     }

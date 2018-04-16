@@ -117,16 +117,16 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
 
-        if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//+
+        if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//
 
             $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['gameList'], $messageType);
         }
-        else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//+
+        else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//
             $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType);
         }
-        else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){//+
+        else if ($messageType == MessageTypes::BROADCAST_GAME_CREATED){//
 
             $this->sendToTable64($contAssocArray['gameInfo'], $messageType);
         }
@@ -134,22 +134,22 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
             $this->sendToTable64($contAssocArray['gameInfo'],
                 MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLES);
-            $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'],
+            $this->sendToPlay64($contAssocArray['game']['gameInfo']['gameId'],$contAssocArray['game'],
                 MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLE);
 
 
         }
         else if ($messageType == MessageTypes::USER_PICK){
-            $this->sendToSelf($con, $contAssocArray['game'], $messageType);
+            $this->sendToSelf($con, $contAssocArray['gameState'], $messageType);
         }
         else if ($messageType == MessageTypes::USER_MOVE){
             $boardChanged = $contAssocArray['boardChanged'];
 
             if (!$boardChanged){//unpicked piece
-                $this->sendToSelf($con, $contAssocArray['game'], $messageType);
+                $this->sendToSelf($con, $contAssocArray['gameState'], $messageType);
             }
             else if ($boardChanged){//moved checker
-                $this->sendToPlay64($contAssocArray['game']['gameId'],$contAssocArray['game'], $messageType);
+                $this->sendToPlay64($contAssocArray['gameId'],$contAssocArray['gameState'], $messageType);
             }
 
         }

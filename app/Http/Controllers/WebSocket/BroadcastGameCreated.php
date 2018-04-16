@@ -22,7 +22,7 @@ class BroadcastGameCreated extends WebSocketController
 
         if ($targetGame != null){
 
-            $gameInfo = new GameInfo($targetGame->gameId, $targetGame->players, $targetGame->watchers);
+            $gameInfo = $targetGame->gameInfo;
             return response()->json(['gameInfo'=>$gameInfo], 200);
         }
         else{

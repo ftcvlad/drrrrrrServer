@@ -29,7 +29,7 @@ class GamesManager
         $boardState = $this->createStartGrid();
 
         $player = $this->makePlayerObject($userId);
-        $createdGame = new Game($uuid, $userId, $boardState, $player);
+        $createdGame = new Game($uuid, $boardState, $player);
 
 
         $gameIds[] = $uuid;
@@ -63,12 +63,12 @@ class GamesManager
         }
         else{
             $game = unserialize($gameStr);
-            if (count($game->players)>1){
+            if (count($game->gameInfo->players)>1){
                 abort(403, 'game is full');
             }
 
-            $game->players[] = $this->makePlayerObject($playerId);
-            $game->isGameGoing = true;
+            $game->gameInfo->players[] = $this->makePlayerObject($playerId);
+            $game->gameState->isGameGoing = true;
 
 
             Cache::forever($gameId, serialize($game));
@@ -90,7 +90,7 @@ class GamesManager
         else{
             $game = unserialize($gameStr);
 
-            $game->watchers[] = $this->makePlayerObject($playerId);
+            $game->gameInfo->watchers[] = $this->makePlayerObject($playerId);
 
             Cache::forever($gameId, serialize($game));
             return $game;
@@ -120,13 +120,13 @@ class GamesManager
             if ($gameStr != null){
                 $game = unserialize($gameStr);
 
-                foreach($game->players as $player) {
+                foreach($game->gameInfo->players as $player) {
                     if ($player["id"] == $userId) {
                         return $game;
                     }
                 }
 
-                foreach($game->watchers as $watcher) {
+                foreach($game->gameInfo->watchers as $watcher) {
                     if ($watcher["id"] == $userId) {
                         return $game;
                     }
@@ -215,36 +215,37 @@ class GamesManager
             return null;//move not allowed!
         }
         $game = unserialize($gameStr);
+        $gameState = $game->gameState;
+        $gameInfo = $game->gameInfo;
 
+        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]["id"] == $userId){//if user's turn
 
-        if ($game->isGameGoing && $game->players[$game->currentPlayer]["id"] == $userId){//if user's turn
-
-            if ($game->selectChecker == true){//checker selection
+            if ($gameState->selectChecker == true){//checker selection
 
                 $turnMultiplier = 1;
-                if ($game->currentPlayer == 1){
+                if ($gameState->currentPlayer == 1){
                     $turnMultiplier = -1;
                 }
-                if ($game->boardState[$row][$col] * $turnMultiplier >0){//own piece
+                if ($gameState->boardState[$row][$col] * $turnMultiplier >0){//own piece
                     $possibleGoChoices = [];
-                     if (abs($game->boardState[$row][$col]) == 1) {//if checker
+                     if (abs($gameState->boardState[$row][$col]) == 1) {//if checker
 
-                         $possibleGoChoices = $this->getCheckerBeatOptions($row, $col, $game->boardState, $turnMultiplier);
+                         $possibleGoChoices = $this->getCheckerBeatOptions($row, $col, $gameState->boardState, $turnMultiplier);
                          if (count($possibleGoChoices) == 0){
-                            $beatsExist = $this->getAllBeatOptions($game->boardState, $turnMultiplier);
+                            $beatsExist = $this->getAllBeatOptions($gameState->boardState, $turnMultiplier);
                             if ($beatsExist){return null;}//move not allowed
 
 
-                            $possibleGoChoices = $this->getCheckerGoOptions($row, $col, $game->boardState,$turnMultiplier);
+                            $possibleGoChoices = $this->getCheckerGoOptions($row, $col, $gameState->boardState,$turnMultiplier);
                          }
                      }
-                     else if (abs($game->boardState[$row][$col]) == 2){
-                         $possibleGoChoices = $this->getDamkaBeatOptions($row, $col, $game->boardState, 0, 0, $turnMultiplier);
+                     else if (abs($gameState->boardState[$row][$col]) == 2){
+                         $possibleGoChoices = $this->getDamkaBeatOptions($row, $col, $gameState->boardState, 0, 0, $turnMultiplier);
                          if (count($possibleGoChoices) == 0){
-                             $beatsExist = $this->getAllBeatOptions($game->boardState, $turnMultiplier);
+                             $beatsExist = $this->getAllBeatOptions($gameState->boardState, $turnMultiplier);
                              if ($beatsExist){return null;}//move not allowed
 
-                             $possibleGoChoices = $this->getDamkaGoOptions($row, $col, $game->boardState);
+                             $possibleGoChoices = $this->getDamkaGoOptions($row, $col, $gameState->boardState);
                          }
                      }
 
@@ -253,13 +254,13 @@ class GamesManager
                     }
                     $possibleGoChoices[] = array("row"=>$row, "col"=>$col);//last item is the select position itself, as it is a possible choice
 
-                    $game->selectChecker = false;
-                    $game->possibleGoChoices = $possibleGoChoices;
-                    $game->pickedChecker = [$row, $col];
+                    $gameState->selectChecker = false;
+                    $gameState->possibleGoChoices = $possibleGoChoices;
+                    $gameState->pickedChecker = [$row, $col];
 
                     Cache::forever($gameId, serialize($game));
 
-                    return $game;
+                    return $gameState;
 
                 }
 
@@ -284,6 +285,7 @@ class GamesManager
         $result = $this->userMove($row, $col, $userId, $game);
 
         if ($result != null){
+            $result['gameId'] = $game->gameInfo->gameId;
             Cache::forever($gameId, serialize($game));
         }
         return $result;
@@ -291,118 +293,120 @@ class GamesManager
 
     public function userMove($row, $col, $userId, &$game){
 
+        $gameInfo = $game->gameInfo;
+        $gameState = $game->gameState;
 
-        if ($game->isGameGoing && $game->players[$game->currentPlayer]["id"] == $userId) {//if user's turn
-            if ($game->selectChecker == false){
+        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]["id"] == $userId) {//if user's turn
+            if ($gameState->selectChecker == false){
 
 
 
                 $moveInf = array("row"=>$row, "col"=>$col);
 
 
-                if ($moveInf === $game->possibleGoChoices[count($game->possibleGoChoices)-1]
-                            && (count($game->moves) == 0 || $game->moves[count($game->moves)-1]["finished"] == true)){//stopped at start position and deleted nothing
-                    $game->selectChecker = true;
-                    $game->pickedChecker = [];
-                    $game->possibleGoChoices = [];
-                    return array("boardChanged"=>false, "game"=>$game);
+                if ($moveInf === $gameState->possibleGoChoices[count($gameState->possibleGoChoices)-1]
+                            && (count($gameState->moves) == 0 || $gameState->moves[count($gameState->moves)-1]["finished"] == true)){//stopped at start position and deleted nothing
+                    $gameState->selectChecker = true;
+                    $gameState->pickedChecker = [];
+                    $gameState->possibleGoChoices = [];
+                    return array("boardChanged"=>false, "gameState"=>$gameState);
                 }
 
                 $turnMultiplier = 1;
-                if ($game->currentPlayer == 1){
+                if ($gameState->currentPlayer == 1){
                     $turnMultiplier = -1;
                 }
 
-                for ($i = 0; $i < count($game->possibleGoChoices); $i++) {
-                    if ($moveInf === $game->possibleGoChoices[$i]) {
+                for ($i = 0; $i < count($gameState->possibleGoChoices); $i++) {
+                    if ($moveInf === $gameState->possibleGoChoices[$i]) {
 
-                        $prevPos = array("row"=>$game->pickedChecker[0], "col"=>$game->pickedChecker[1]);
+                        $prevPos = array("row"=>$gameState->pickedChecker[0], "col"=>$gameState->pickedChecker[1]);
                         $nextPos = $moveInf;
-                        $prevType = $game->boardState[$prevPos["row"]][$prevPos["col"]];
+                        $prevType = $gameState->boardState[$prevPos["row"]][$prevPos["col"]];
                         //update grid on prev and next pos
 
-                        if ($game->boardState[$prevPos["row"]][$prevPos["col"]] == 2 * $turnMultiplier ||
+                        if ($gameState->boardState[$prevPos["row"]][$prevPos["col"]] == 2 * $turnMultiplier ||
                             ($nextPos["row"] == 0 && $turnMultiplier == 1) ||
                             ($nextPos["row"] == 7 && $turnMultiplier == -1)) {
-                            $game->boardState[$nextPos["row"]][$nextPos["col"]] = 2 * $turnMultiplier;
+                            $gameState->boardState[$nextPos["row"]][$nextPos["col"]] = 2 * $turnMultiplier;
                         } else {
-                            $game->boardState[$nextPos["row"]][$nextPos["col"]] = $turnMultiplier;
+                            $gameState->boardState[$nextPos["row"]][$nextPos["col"]] = $turnMultiplier;
                         }
-                        $game->boardState[$prevPos["row"]][$prevPos["col"]] = 0;
+                        $gameState->boardState[$prevPos["row"]][$prevPos["col"]] = 0;
 
-                        $killed = $this->getDeletedCell($prevPos, $nextPos, $game->boardState);
+                        $killed = $this->getDeletedCell($prevPos, $nextPos, $gameState->boardState);
 
 
                         //3 FUCKING OPTIONS!!!!!!!!!!!!!!!!!!!!!!!
                         if (count($killed) == 0) {//KILLED NONE
 
-                            $game->selectChecker = true;
-                            $game->pickedChecker = [];
-                            $game->possibleGoChoices = [];
+                            $gameState->selectChecker = true;
+                            $gameState->pickedChecker = [];
+                            $gameState->possibleGoChoices = [];
 
-                            $game->moves[] = array("player"=>$game->currentPlayer,
+                            $gameState->moves[] = array("player"=>$gameState->currentPlayer,
                                                     "finished"=>true,
                                                     "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>null, "prevType"=>$prevType)]);
-                            $this->afterTurn($game, $turnMultiplier);
+                            $this->afterTurn($gameState, $turnMultiplier);
 
-                            return array("boardChanged"=>true, "game"=>$game);
+                            return array("boardChanged"=>true, "gameState"=>$gameState);
 
                         }
                         else {
 
-                            $killed["type"] = $game->boardState[$killed["row"]][$killed["col"]];
-                            $game->boardState[$killed["row"]][$killed["col"]] = 66;
+                            $killed["type"] = $gameState->boardState[$killed["row"]][$killed["col"]];
+                            $gameState->boardState[$killed["row"]][$killed["col"]] = 66;
 
 
 
-                            if ($game->boardState[$nextPos["row"]][$nextPos["col"]] === 2 * $turnMultiplier) {
-                                $game->possibleGoChoices = $this->getDamkaBeatOptions($nextPos["row"], $nextPos["col"], $game->boardState, 0, 0, $turnMultiplier);//cannot jump over 66
+                            if ($gameState->boardState[$nextPos["row"]][$nextPos["col"]] === 2 * $turnMultiplier) {
+                                $gameState->possibleGoChoices = $this->getDamkaBeatOptions($nextPos["row"], $nextPos["col"], $gameState->boardState, 0, 0, $turnMultiplier);//cannot jump over 66
                             }
                             else {
-                                $game->possibleGoChoices = $this->getCheckerBeatOptions($nextPos["row"], $nextPos["col"], $game->boardState, $turnMultiplier);//cannot jump over 66
+                                $gameState->possibleGoChoices = $this->getCheckerBeatOptions($nextPos["row"], $nextPos["col"], $gameState->boardState, $turnMultiplier);//cannot jump over 66
                             }
 
 
-                            if (count( $game->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
+                            if (count( $gameState->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
 
 
-                                if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
-                                    $game->moves[] = array("player"=>$game->currentPlayer,//new move
+                                if ($gameState->moves[count($gameState->moves)-1]["player"] != $gameState->currentPlayer){//1st move (in sequence) by this player
+                                    $gameState->moves[] = array("player"=>$gameState->currentPlayer,//new move
                                                             "finished"=>true,
                                                             "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType);//continuing move
-                                    $game->moves[count($game->moves)-1]["finished"] = true;
+                                    $gameState->moves[count($gameState->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType);//continuing move
+                                    $gameState->moves[count($gameState->moves)-1]["finished"] = true;
                                 }
-                                $game->selectChecker = true;
-                                $game->pickedChecker = [];
+                                $gameState->selectChecker = true;
+                                $gameState->pickedChecker = [];
 
 
-                                $moveInfo = $game->moves[count($game->moves)-1]["moveInfo"];
+                                $moveInfo = $gameState->moves[count($gameState->moves)-1]["moveInfo"];
                                 for ($i = 0; $i < count($moveInfo); $i++) {
-                                    $game->boardState[$moveInfo[$i]["killed"]["row"]][$moveInfo[$i]["killed"]["col"]] = 0;//get rid of 66
+                                    $gameState->boardState[$moveInfo[$i]["killed"]["row"]][$moveInfo[$i]["killed"]["col"]] = 0;//get rid of 66
                                 }
 
 
-                                $this->afterTurn($game, $turnMultiplier);
+                                $this->afterTurn($gameState, $turnMultiplier);//TODO
 
-                                return array("boardChanged"=>true, "game"=>$game);
+                                return array("boardChanged"=>true, "gameState"=>$gameState);
                             }
                             else {//KILLED AND STILL MORE TO KILL
-                                if ($game->moves[count($game->moves)-1]["player"] != $game->currentPlayer){//1st move (in sequence) by this player
-                                    $game->moves[] = array("player"=>$game->currentPlayer,//new move
+                                if ($gameState->moves[count($gameState->moves)-1]["player"] != $gameState->currentPlayer){//1st move (in sequence) by this player
+                                    $gameState->moves[] = array("player"=>$gameState->currentPlayer,//new move
                                         "finished"=>false,
                                         "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed, "prevType"=>$prevType)]);
                                 }
                                 else{
-                                    $game->moves[count($game->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed,"prevType"=>$prevType);//continuing move
+                                    $gameState->moves[count($gameState->moves)-1]["moveInfo"][] = array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>$killed,"prevType"=>$prevType);//continuing move
                                 }
 
-                                $game->pickedChecker = [$nextPos["row"], $nextPos["col"]];
+                                $gameState->pickedChecker = [$nextPos["row"], $nextPos["col"]];
 
 
-                                return array("boardChanged"=>true, "game"=>$game);
+                                return array("boardChanged"=>true, "gameState"=>$gameState);
                              }
 
 
@@ -422,19 +426,19 @@ class GamesManager
     }
 
 
-    private function afterTurn(&$game, $turnMultiplier){
+    private function afterTurn(&$gameState, $turnMultiplier){
         $turnMultiplier *= -1;
         //check if enemy lost
-        $lost = $this->checkLost($game->boardState, $turnMultiplier);//check if enemy lost after my turn!
+        $lost = $this->checkLost($gameState->boardState, $turnMultiplier);//check if enemy lost after my turn!
         if ($lost){
 
             Log::info("player won!");
             //updatePlayerStatistics("enemyLost",theGame, socket);//TODO update player statistics
-            $game->isGameGoing = false;
+            $gameState->isGameGoing = false;
         }
 
         //change turn
-        $game->currentPlayer = $game->currentPlayer == 0 ? 1 : 0;
+        $gameState->currentPlayer = $gameState->currentPlayer == 0 ? 1 : 0;
 
 
     }

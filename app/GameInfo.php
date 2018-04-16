@@ -16,10 +16,10 @@ class GameInfo
     public $watchers = [];
 
 
-    function __construct($gameId, $players, $watchers)
+    function __construct($gameId, $player)
     {
         $this->gameId = $gameId;
-        $this->players = $players;
-        $this->watchers = $watchers;
+        $this->players[] = $player;
+        $this->watchers = [];
     }
 }

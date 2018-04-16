@@ -30,7 +30,7 @@ class BroadcastPlayerJoined extends WebSocketController
         }
         else{
 
-            $gameInfo = new GameInfo($targetGame->gameId, $targetGame->players, $targetGame->watchers);
+            $gameInfo = $targetGame->gameInfo;
             return response()->json(['game'=>$targetGame, "gameInfo"=>$gameInfo], 200);
         }
     }

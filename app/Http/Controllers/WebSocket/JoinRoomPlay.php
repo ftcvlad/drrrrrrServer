@@ -20,7 +20,7 @@ class JoinRoomPlay extends WebSocketController
 
         $targetGame = $gm->findGameInWhichUserParticipates(Auth::id());
         if ($targetGame != null){
-            return response()->json(['room' => $targetGame->gameId, 'currentGame'=>$targetGame], 200);
+            return response()->json(['room' => $targetGame->gameInfo->gameId, 'currentGame'=>$targetGame], 200);
         }
         else{
             return response()->json(['message' => 'player has to join game to join socket room!'], 403);//!!! properly handle this?

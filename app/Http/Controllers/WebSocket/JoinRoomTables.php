@@ -19,11 +19,11 @@ class JoinRoomTables extends WebSocketController
 {
 
     private function createGameInfoList(&$games){
-        $gameInfoArr = [];
+        $gameInfoList = [];
         foreach ($games as $game){
-            $gameInfoArr[] = new GameInfo($game->gameId, $game->players, $game->watchers);
+            $gameInfoList[] = $game->gameInfo;
         }
-        return $gameInfoArr;
+        return $gameInfoList;
     }
 
 
@@ -35,8 +35,8 @@ class JoinRoomTables extends WebSocketController
         if ($category == RoomCategories::TABLE_64_ROOM || $category == RoomCategories::TABLE_100_ROOM){
             $games = $gm->findGamesByCategory($category);
 
-            $gameList = $this->createGameInfoList($games);
-            return response()->json(['room' => $category, 'gameList'=>$gameList], 200);
+            $gameInfoList = $this->createGameInfoList($games);
+            return response()->json(['room' => $category, 'gameList'=>$gameInfoList], 200);
         }
 
     }
