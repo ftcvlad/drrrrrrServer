@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use App\Game;
 use Illuminate\Support\Facades\Auth;
 
+
 class GamesManager
 {
     //games -- stores uuids of all games
@@ -343,7 +344,6 @@ class GamesManager
                             $gameState->selectChecker = true;
                             $gameState->pickedChecker = [];
                             $gameState->possibleGoChoices = [];
-
                             $gameState->moves[] = array("player"=>$gameState->currentPlayer,
                                                     "finished"=>true,
                                                     "moveInfo"=> [array("prev"=>$prevPos, "next"=>$nextPos, "killed"=>null, "prevType"=>$prevType)]);

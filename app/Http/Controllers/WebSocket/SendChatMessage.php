@@ -30,7 +30,7 @@ class SendChatMessage extends WebSocketController
 
         //check if sending user participates in the game
         $game = $gm->findGameInWhichUserParticipates($userId);
-        if ($game==null || $game->gameId !== $gameId){
+        if ($game==null || $game->gameInfo->gameId !== $gameId){
             return response()->json(['message' => 'user must participate in game to send messages'], 403);
         }
         else{
