@@ -27,10 +27,9 @@ Route::get('/user', 'UserController@getUser');
 
 //ajax requests requiring a cookie with session id
 Route::group(['middleware' => ['ajaxAuth']], function () {
-        Route::post('/games', 'GameController@createGame');
         Route::delete('/games', 'GameController@removeAllGames');
-        Route::put('/games/{id}/play', 'GameController@playGame');
-        Route::put('/games/{id}/watch', 'GameController@watchGame');
+
+
 });
 
 //--------------WEB SOCKETS----------------
@@ -40,11 +39,12 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
 Route::group(['middleware' => ['ajaxAuth']], function () {
     Route::get('/websocket/message/joinRoomPlay', 'WebSocket\JoinRoomPlay@handleMessage');
     Route::get('/websocket/message/joinRoomTables', 'WebSocket\JoinRoomTables@handleMessage');
-    Route::get('/websocket/message/broadcastGameCreated', 'WebSocket\BroadcastGameCreated@handleMessage');
-    Route::get('/websocket/message/broadcastPlayerJoined', 'WebSocket\BroadcastPlayerJoined@handleMessage');
     Route::get('/websocket/message/userPick', 'WebSocket\UserPick@handleMessage');
     Route::get('/websocket/message/userMove', 'WebSocket\UserMove@handleMessage');
     Route::get('/websocket/message/sendChatMessage', 'WebSocket\SendChatMessage@handleMessage');
+    Route::get('/websocket/message/createGame', 'WebSocket\CreateGame@handleMessage');
+    Route::get('/websocket/message/playGame', 'WebSocket\PlayGame@handleMessage');
+    Route::get('/websocket/message/watchGame', 'WebSocket\WatchGame@handleMessage');
 });
 
 Route::get('/websocket/open', 'WebSocketController@onOpen');
