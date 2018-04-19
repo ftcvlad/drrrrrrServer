@@ -8,6 +8,7 @@
 
 namespace App\Util;
 
+use App\GameState;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Game;
@@ -130,10 +131,10 @@ class GamesManager
 
 
         $uuid = $this->generateUuid($gameIds);
-        $boardState = $this->createStartGrid();
+
 
         $player = $this->makePlayerObject($userId);
-        $createdGame = new Game($uuid, $boardState, $player);
+        $createdGame = new Game($uuid, $player);
 
 
         $gameIds[] = $uuid;
@@ -158,6 +159,10 @@ class GamesManager
         }
     }
 
+
+
+
+
     public function playGame($gameId, $playerId)
     {
         $this->ensureUserNotInGame($playerId);
@@ -168,12 +173,15 @@ class GamesManager
             abort(403, 'game doesn\'t exist ');
         } else {
             $game = unserialize($gameStr);
-            if (count($game->gameInfo->players) > 1) {
+            $nOfPlayersBefore = count($game->gameInfo->players);
+            if ($nOfPlayersBefore > 1) {
                 abort(403, 'game is full');
             }
 
             $game->gameInfo->players[] = $this->makePlayerObject($playerId);
-            if (count($game->gameInfo->players) == 2){
+            if ($nOfPlayersBefore+1 == 2){
+
+                $game->gameState = new GameState();//reset game state
                 $game->gameState->isGameGoing = true;
             }
 
@@ -277,17 +285,7 @@ class GamesManager
 
     }
 
-    private function createStartGrid()
-    {
-        return [[0, -1, 0, -1, 0, -1, 0, -1],
-            [-1, 0, -1, 0, -1, 0, -1, 0],
-            [0, -1, 0, -1, 0, -1, 0, -1],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0, 0, 0, 0, 0, 0, 0],
-            [1, 0, 1, 0, 1, 0, 1, 0],
-            [0, 1, 0, 1, 0, 1, 0, 1],
-            [1, 0, 1, 0, 1, 0, 1, 0]];
-    }
+
 
 
     public function findGamesByCategory($category)//!!! when will be multiple categories, filter

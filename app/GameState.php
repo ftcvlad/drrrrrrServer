@@ -20,8 +20,22 @@ class GameState
     public $pickedChecker = [];//[row, col]
     public $moves = [];
 
-    function __construct($boardState)
+    function __construct()
     {
-        $this->boardState = $boardState;
+        $this->boardState = $this->createStartGrid();
     }
+
+
+    private function createStartGrid()
+    {
+        return [[0, -1, 0, -1, 0, -1, 0, -1],
+            [-1, 0, -1, 0, -1, 0, -1, 0],
+            [0, -1, 0, -1, 0, -1, 0, -1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [1, 0, 1, 0, 1, 0, 1, 0],
+            [0, 1, 0, 1, 0, 1, 0, 1],
+            [1, 0, 1, 0, 1, 0, 1, 0]];
+    }
+
 }

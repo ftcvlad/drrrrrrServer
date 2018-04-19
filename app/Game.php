@@ -17,10 +17,10 @@ class Game
     public $chatMessages = []; //this game is more like a game table => also stores chat messages
 
 
-    function __construct($gameId, $boardState, $player)
+    function __construct($gameId, $player)
     {
         $this->gameInfo = new GameInfo($gameId, $player);
-        $this->gameState = new GameState($boardState);
+        $this->gameState = new GameState();
 
 
 
