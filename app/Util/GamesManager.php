@@ -40,6 +40,7 @@ class GamesManager
         } else {
             $game = unserialize($gameStr);
 
+            //TODO security: check if user is a player or a watcher
             $isLastPerson = count($game->gameInfo->players) + count($game->gameInfo->watchers) == 1;
 
             if ($isLastPerson) {
@@ -99,6 +100,37 @@ class GamesManager
 
         }
     }
+
+    public function surrender($gameId, $userId){
+        $gameStr = Cache::get($gameId, null);
+
+        if ($gameStr == null) {
+            abort(403, 'game doesn\'t exist ');
+        } else {
+            $game = unserialize($gameStr);
+
+            if ($game->gameState->isGameGoing == false){
+                abort(401, "impossible happened: surrenderer from non-going game");
+            }
+
+
+            if ($game->gameInfo->players[0]['id'] == $userId ){
+                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]['id'],
+                    true, 0, "Surrendered" );
+            }
+            else if ($game->gameInfo->players[1]['id'] == $userId){
+                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[0]['id'],
+                    false, 0, "Surrendered" );
+            }
+            else{
+                abort(401, "impossible happened: surrenderer is not among players");
+            }
+
+            return $gameResult;
+
+        }
+    }
+
 
     public function finishGame(&$game, $initiatorId, $opponentId, $playsWhite, $matchResult, $reason){
         $game->gameState->isGameGoing = false;

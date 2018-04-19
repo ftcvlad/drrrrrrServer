@@ -191,14 +191,18 @@ class WebSocketRequestCreator implements MessageComponentInterface
                     if ($wasGameGoing){
                         $this->sendToPlay64($gameId,$contAssocArray['result']['gameResult'],
                             MessageTypes::BROADCAST_GAME_FINISHED, $con);
-
-
                     }
-
-
                 }
             }
+        }
+        else if ($messageType == MessageTypes::SURRENDER){
+            $gameId = $contAssocArray['gameId'];
 
+
+            $this->sendToSelf($con, $contAssocArray['gameResult'], $messageType, $messageId);
+
+            $this->sendToPlay64($gameId,$contAssocArray['gameResult'],
+                MessageTypes::BROADCAST_GAME_FINISHED, $con);
 
         }
 

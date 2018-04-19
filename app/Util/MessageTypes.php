@@ -35,4 +35,6 @@ abstract class MessageTypes
     const EXIT_GAME = "exitGame";
     const BROADCAST_TABLE_REMOVED = "broadcastTableRemoved";
 
+    const SURRENDER = "surrender";
+
 }
