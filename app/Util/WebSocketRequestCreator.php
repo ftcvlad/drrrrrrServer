@@ -65,7 +65,6 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
         if ($response->status() == 401){//user has not supplied session cookie
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR ,'msg' => 'not authorised!', 'status'=>401]));
-            $con->close();
             return;
         }
 
@@ -132,13 +131,24 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToTable64($contAssocArray['currentGame']['gameInfo'], MessageTypes::BROADCAST_GAME_CREATED, $con);
         }
         else if ($messageType == MessageTypes::PLAY_GAME || $messageType == MessageTypes::WATCH_GAME){
+            $gameId = $contAssocArray['currentGame']['gameInfo']['gameId'];
+
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
 
-            $this->sendToTable64($contAssocArray['currentGame']['gameInfo'],
-                MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLES, $con);
+            $this->sendToPlay64($gameId,$contAssocArray['currentGame']['gameInfo'],
+                MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
 
-            $this->sendToPlay64($contAssocArray['currentGame']['gameInfo']['gameId'],$contAssocArray['currentGame'],
-                MessageTypes::BROADCAST_PLAYER_JOINED_TO_TABLE, $con);
+            if ($messageType == MessageTypes::PLAY_GAME){
+                $this->sendToTable64($contAssocArray['currentGame']['gameInfo'],
+                    MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
+
+                //game started
+                if (count($contAssocArray['currentGame']['gameInfo']['players']) == 2){
+                    $this->sendToPlay64($gameId,$contAssocArray['currentGame']['gameState'],
+                        MessageTypes::BROADCAST_GAME_STARTED, $con);
+                }
+            }
+
         }
         else if ($messageType == MessageTypes::USER_PICK){
             $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
@@ -157,6 +167,41 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToPlay64($contAssocArray['gameId'],$contAssocArray, $messageType, $con);
         }
 
+        else if ($messageType == MessageTypes::EXIT_GAME){
+            $isLastPerson = $contAssocArray['result']['isLastPerson'];
+            $gameId = $contAssocArray['gameId'];
+
+
+            $this->sendToSelf204($con, $messageType, $messageId);
+
+            if ($isLastPerson){//game table removed
+                $this->sendToTable64($gameId,MessageTypes::BROADCAST_TABLE_REMOVED, $con);
+            }
+            else{
+                $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                    MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
+
+                $isPlayer = $contAssocArray['result']['isPlayer'];
+                if ($isPlayer){
+
+                    $this->sendToTable64($contAssocArray['result']['gameInfo'],
+                        MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
+
+                    $wasGameGoing = $contAssocArray['result']['wasGameGoing'];
+                    if ($wasGameGoing){
+                        $this->sendToPlay64($gameId,$contAssocArray['result']['gameResult'],
+                            MessageTypes::BROADCAST_GAME_FINISHED, $con);
+
+
+                    }
+
+
+                }
+            }
+
+
+        }
+
 
 
 
@@ -172,6 +217,9 @@ class WebSocketRequestCreator implements MessageComponentInterface
         }
     }
 
+    private function sendToSelf204(&$con, $messageType, $messageId){
+        $con->send(json_encode(['servMessType'=>$messageType, 'status'=>204, 'id'=>$messageId]));
+    }
 
     private function sendToSelf(&$con, &$data, $messageType, $messageId){
         $con->send(json_encode(['servMessType'=>$messageType, 'data' => $data, 'status'=>200, 'id'=>$messageId]));

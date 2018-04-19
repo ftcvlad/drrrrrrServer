@@ -21,12 +21,18 @@ abstract class MessageTypes
 
     const PLAY_GAME = "playGame";
     const WATCH_GAME = "watchGame";
-    const BROADCAST_PLAYER_JOINED_TO_TABLE = "broadcastPlayerJoinedToTable";
-    const BROADCAST_PLAYER_JOINED_TO_TABLES = "broadcastPlayerJoinedToTables";
+
+    const BROADCAST_PARTICIPANTS_CHANGED_to_table = "broadcastParticipantsChangedToTable";
+    const BROADCAST_PARTICIPANTS_CHANGED_to_tables = "broadcastParticipantsChangedToTables";
+    const BROADCAST_GAME_STARTED = "broadcastGameStarted";
+    const BROADCAST_GAME_FINISHED = "broadcastGameFinished";
 
     const USER_MOVE = "userMove";
     const USER_PICK = "userPick";
 
     const SEND_CHAT_MESSAGE = "sendChatMessage";
+
+    const EXIT_GAME = "exitGame";
+    const BROADCAST_TABLE_REMOVED = "broadcastTableRemoved";
 
 }

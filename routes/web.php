@@ -45,6 +45,7 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
     Route::get('/websocket/message/createGame', 'WebSocket\CreateGame@handleMessage');
     Route::get('/websocket/message/playGame', 'WebSocket\PlayGame@handleMessage');
     Route::get('/websocket/message/watchGame', 'WebSocket\WatchGame@handleMessage');
+    Route::get('/websocket/message/exitGame', 'WebSocket\ExitGame@handleMessage');
 });
 
 Route::get('/websocket/open', 'WebSocketController@onOpen');
