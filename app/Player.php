@@ -15,6 +15,8 @@ abstract class PlayerStatuses
     const playing = 1;
     const confirming = 2;
     const ready = 3;
+    const suggestingDraw = 4;
+    const resolvingDrawOffer = 5;
 }
 
 class Player

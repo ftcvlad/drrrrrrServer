@@ -48,6 +48,9 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
     Route::get('/websocket/message/exitGame', 'WebSocket\ExitGame@handleMessage');
     Route::get('/websocket/message/confirmPlaying', 'WebSocket\ConfirmPlaying@handleMessage');
     Route::get('/websocket/message/surrender', 'WebSocket\Surrender@handleMessage');
+    Route::get('/websocket/message/suggestDraw', 'WebSocket\SuggestDraw@handleMessage');
+    Route::get('/websocket/message/cancelDrawOffer', 'WebSocket\CancelDrawOffer@handleMessage');
+    Route::get('/websocket/message/respondDrawOffer', 'WebSocket\RespondDrawOffer@handleMessage');
     Route::get('/websocket/open', 'WebSocketController@onOpen');
 });
 

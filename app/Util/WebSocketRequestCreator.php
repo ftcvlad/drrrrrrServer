@@ -163,11 +163,24 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
         }
         else if ($messageType == MessageTypes::USER_MOVE){//++
-            $boardChanged = $contAssocArray['boardChanged'];
+            $boardChanged = $contAssocArray['result']['boardChanged'];
+            $gameId = $contAssocArray['gameId'];
 
-            $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
+            $this->sendToSelf($con, $contAssocArray['result']['gameState'], $messageType, $messageId);
             if ($boardChanged){//moved checker
-                $this->sendToPlay64($contAssocArray['gameId'],$contAssocArray['gameState'], $messageType, $con);
+                $this->sendToPlay64($gameId,$contAssocArray['result']['gameState'], $messageType, $con);
+
+                $opponentLost = $contAssocArray['result']['opponentLost'];
+                if ($opponentLost){
+                    
+                    //BROADCAST_SURRENDER just to send game info :)
+                    $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                        MessageTypes::BROADCAST_SURRENDER, $con);
+
+                    $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
+                        MessageTypes::BROADCAST_GAME_FINISHED, $con);
+                }
+
             }
 
         }
@@ -204,12 +217,45 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 }
             }
         }
-        else if ($messageType == MessageTypes::SURRENDER){//++
+        else if ($messageType == MessageTypes::SURRENDER){//+++ surrender, broadcast_surrender change status. broadcast_game_finished changes gameState and gameResult
             $gameId = $contAssocArray['gameId'];
 
-            $this->sendToSelf($con, $contAssocArray['gameResult'], $messageType, $messageId);
-            $this->sendToPlay64($gameId,$contAssocArray['gameResult'],
+            $this->sendToSelf($con, $contAssocArray['result']['gameInfo'], $messageType, $messageId);
+            $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
                 MessageTypes::BROADCAST_SURRENDER, $con);
+
+            $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
+                MessageTypes::BROADCAST_GAME_FINISHED);
+
+
+
+        }
+        else if ($messageType == MessageTypes::SUGGEST_DRAW){//+++
+            $gameId = $contAssocArray['gameId'];
+
+            $this->sendToSelf($con, $contAssocArray['gameInfo'], $messageType, $messageId);
+            $this->sendToPlay64($gameId,$contAssocArray['gameInfo'],
+                MessageTypes::BROADCAST_SUGGEST_DRAW, $con);
+        }
+        else if ($messageType == MessageTypes::RESPOND_DRAW_OFFER){//+++
+            $gameId = $contAssocArray['gameId'];
+
+            $this->sendToSelf($con, $contAssocArray['result']['gameInfo'], $messageType, $messageId);
+            $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                MessageTypes::BROADCAST_RESPOND_DRAW_OFFER, $con);
+
+            if ($contAssocArray['result']['drawAccepted']){
+                $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
+                    MessageTypes::BROADCAST_GAME_FINISHED, $con);
+            }
+        }
+        else if ($messageType == MessageTypes::CANCEL_DRAW_OFFER){
+            $gameId = $contAssocArray['gameId'];
+
+            $this->sendToSelf($con, $contAssocArray['gameInfo'], $messageType, $messageId);
+            $this->sendToPlay64($gameId,$contAssocArray['gameInfo'],
+                MessageTypes::BROADCAST_CANCEL_DRAW_OFFER, $con);
+
 
         }
 

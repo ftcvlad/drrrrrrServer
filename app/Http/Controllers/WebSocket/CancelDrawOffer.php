@@ -2,8 +2,8 @@
 /**
  * Created by PhpStorm.
  * User: Vlad
- * Date: 19/04/2018
- * Time: 15:59
+ * Date: 20/04/2018
+ * Time: 13:57
  */
 
 namespace App\Http\Controllers\WebSocket;
@@ -14,7 +14,8 @@ use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class Surrender extends WebSocketController
+
+class CancelDrawOffer extends WebSocketController
 {
     public function handleMessage(Request $request, GamesManager $gm){
 
@@ -22,9 +23,9 @@ class Surrender extends WebSocketController
         $gameId = $data->gameId;
         $userId = Auth::id();
 
-        $result = $gm->surrender($gameId, $userId);
+        $gameInfo = $gm->cancelDrawOffer($gameId, $userId);
 
-        return response()->json(['result' => $result, 'gameId'=>$gameId], 200);
+        return response()->json(['gameInfo' => $gameInfo, 'gameId'=>$gameId], 200);
 
 
     }

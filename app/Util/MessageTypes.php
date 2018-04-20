@@ -40,4 +40,13 @@ abstract class MessageTypes
     const SURRENDER = "surrender";
     const BROADCAST_SURRENDER = "broadcastSurrender";
 
+    const SUGGEST_DRAW = "suggestDraw";
+    const BROADCAST_SUGGEST_DRAW = "broadcastSuggestDraw";
+
+    const RESPOND_DRAW_OFFER = "respondDrawOffer";
+    const BROADCAST_RESPOND_DRAW_OFFER = "broadcastRespondDrawOffer";
+
+    const BROADCAST_CANCEL_DRAW_OFFER = "broadcastCancelDrawOffer";
+    const CANCEL_DRAW_OFFER = "cancelDrawOffer";
+
 }
