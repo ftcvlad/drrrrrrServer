@@ -117,16 +117,16 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
 
-        if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//
+        if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//++
 
             $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['gameList'], $messageType, $messageId);
         }
-        else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//
+        else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//++
             $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
         }
-        else if ($messageType == MessageTypes::CREATE_GAME){
+        else if ($messageType == MessageTypes::CREATE_GAME){//++
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
             $this->sendToTable64($contAssocArray['currentGame']['gameInfo'], MessageTypes::BROADCAST_GAME_CREATED, $con);
         }
@@ -141,19 +141,27 @@ class WebSocketRequestCreator implements MessageComponentInterface
             if ($messageType == MessageTypes::PLAY_GAME){
                 $this->sendToTable64($contAssocArray['currentGame']['gameInfo'],
                     MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
-
-                //game started
-                if (count($contAssocArray['currentGame']['gameInfo']['players']) == 2){
-                    $this->sendToPlay64($gameId,$contAssocArray['currentGame']['gameState'],
-                        MessageTypes::BROADCAST_GAME_STARTED, $con);
-                }
             }
-
         }
-        else if ($messageType == MessageTypes::USER_PICK){
+        else if ($messageType == MessageTypes::CONFIRM_PLAYING){//++
+
+            $gameId = $contAssocArray['gameId'];
+            $gameStarted = $contAssocArray['result']['gameStarted'];
+
+
+            $this->sendToSelf($con, $contAssocArray['result']['gameInfo'], $messageType, $messageId);
+            $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                MessageTypes::BROADCAST_CONFIRM_PLAYING, $con);
+
+            if ($gameStarted){
+                $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameState'],
+                      MessageTypes::BROADCAST_GAME_STARTED);
+            }
+        }
+        else if ($messageType == MessageTypes::USER_PICK){//++
             $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
         }
-        else if ($messageType == MessageTypes::USER_MOVE){
+        else if ($messageType == MessageTypes::USER_MOVE){//++
             $boardChanged = $contAssocArray['boardChanged'];
 
             $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
@@ -162,12 +170,12 @@ class WebSocketRequestCreator implements MessageComponentInterface
             }
 
         }
-        else if ($messageType == MessageTypes::SEND_CHAT_MESSAGE){
+        else if ($messageType == MessageTypes::SEND_CHAT_MESSAGE){//++
             $this->sendToSelf($con, $contAssocArray, $messageType, $messageId);
             $this->sendToPlay64($contAssocArray['gameId'],$contAssocArray, $messageType, $con);
         }
 
-        else if ($messageType == MessageTypes::EXIT_GAME){
+        else if ($messageType == MessageTypes::EXIT_GAME){//++
             $isLastPerson = $contAssocArray['result']['isLastPerson'];
             $gameId = $contAssocArray['gameId'];
 
@@ -195,14 +203,12 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 }
             }
         }
-        else if ($messageType == MessageTypes::SURRENDER){
+        else if ($messageType == MessageTypes::SURRENDER){//++
             $gameId = $contAssocArray['gameId'];
 
-
             $this->sendToSelf($con, $contAssocArray['gameResult'], $messageType, $messageId);
-
             $this->sendToPlay64($gameId,$contAssocArray['gameResult'],
-                MessageTypes::BROADCAST_GAME_FINISHED, $con);
+                MessageTypes::BROADCAST_SURRENDER, $con);
 
         }
 
@@ -229,9 +235,20 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $con->send(json_encode(['servMessType'=>$messageType, 'data' => $data, 'status'=>200, 'id'=>$messageId]));
     }
 
-    private function sendToPlay64($gameId, &$data, $messageType, $con){
+    private function sendToPlay64($gameId, &$data, $messageType, $con){//except self
         foreach ($this->clients as $client){
             if ($client['room'] == $gameId  && $client['conn'] != $con){
+                $client['conn']->send(json_encode(['servMessType'=>$messageType,
+                    'data' => $data,
+                    'status'=>200]));
+            }
+
+        }
+    }
+
+    private function sendToAllPlay64($gameId, &$data, $messageType){//including self
+        foreach ($this->clients as $client){
+            if ($client['room'] == $gameId){
                 $client['conn']->send(json_encode(['servMessType'=>$messageType,
                     'data' => $data,
                     'status'=>200]));

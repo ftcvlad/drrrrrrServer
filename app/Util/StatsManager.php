@@ -111,9 +111,6 @@ class StatsManager
             }
         }
 
-        Log::info($losses." ".$draws." ".$wins);
-
-
         return array("losses"=>$losses, "draws"=>$draws, "wins"=>$wins);
 
     }

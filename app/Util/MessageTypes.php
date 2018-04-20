@@ -21,6 +21,8 @@ abstract class MessageTypes
 
     const PLAY_GAME = "playGame";
     const WATCH_GAME = "watchGame";
+    const CONFIRM_PLAYING = "confirmPlaying";
+    const BROADCAST_CONFIRM_PLAYING = "broadcastConfirmPlaying";
 
     const BROADCAST_PARTICIPANTS_CHANGED_to_table = "broadcastParticipantsChangedToTable";
     const BROADCAST_PARTICIPANTS_CHANGED_to_tables = "broadcastParticipantsChangedToTables";
@@ -36,5 +38,6 @@ abstract class MessageTypes
     const BROADCAST_TABLE_REMOVED = "broadcastTableRemoved";
 
     const SURRENDER = "surrender";
+    const BROADCAST_SURRENDER = "broadcastSurrender";
 
 }

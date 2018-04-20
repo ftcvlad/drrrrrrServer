@@ -9,9 +9,12 @@
 namespace App\Util;
 
 use App\GameState;
+use App\PlayerStatuses;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 use App\Game;
+use App\Player;
+use App\Watcher;
 use Illuminate\Support\Facades\Auth;
 use App\Util\StatsManager;
 
@@ -20,7 +23,7 @@ class GamesManager
 
     private function removeParticipant(&$participantList, $userId){
         for ($i = 0; $i < count($participantList); $i++) {
-            if ($participantList[$i]['id'] == $userId) {
+            if ($participantList[$i]->id == $userId) {
                 $participant = $participantList[$i];
                 array_splice($participantList, $i, 1);
                 return array("participant"=> $participant, "index"=>$i);
@@ -71,6 +74,10 @@ class GamesManager
                     return array("isLastPerson" => false, "isPlayer"=>false, "gameInfo"=>$game->gameInfo);
                 }
                 else{
+                    if (count($game->gameInfo->players) == 1){//1 player exit, but 1 still there
+                        $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
+                    }
+
                     $wasGameGoing = $game->gameState->isGameGoing;
                     if (!$wasGameGoing){
                         Cache::forever($gameId, serialize($game));
@@ -78,7 +85,7 @@ class GamesManager
                     }
                     else{
 
-                       $opponentId = $game->gameInfo->players[0]['id'];//remaining player
+                       $opponentId = $game->gameInfo->players[0]->id;//remaining player
                        $playsWhite = $leavingPlayer["index"] == 0;
                        $gameResult = $this->finishGame($game, $userId, $opponentId, $playsWhite, 0, "Left" );
 
@@ -114,17 +121,22 @@ class GamesManager
             }
 
 
-            if ($game->gameInfo->players[0]['id'] == $userId ){
-                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]['id'],
+            if ($game->gameInfo->players[0]->id == $userId ){
+                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]->id,
                     true, 0, "Surrendered" );
             }
-            else if ($game->gameInfo->players[1]['id'] == $userId){
-                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[0]['id'],
+            else if ($game->gameInfo->players[1]->id == $userId){
+                $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[0]->id,
                     false, 0, "Surrendered" );
             }
             else{
                 abort(401, "impossible happened: surrenderer is not among players");
             }
+
+            $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
+            $game->gameInfo->players[1]->currentStatus = PlayerStatuses::confirming;
+
+            Cache::forever($gameId, serialize($game));
 
             return $gameResult;
 
@@ -165,7 +177,8 @@ class GamesManager
         $uuid = $this->generateUuid($gameIds);
 
 
-        $player = $this->makePlayerObject($userId);
+        $player = new Player(Auth::user()->email, $userId, PlayerStatuses::waiting);
+
         $createdGame = new Game($uuid, $player);
 
 
@@ -177,11 +190,6 @@ class GamesManager
         return $createdGame;
     }
 
-    private function makePlayerObject($playerId)
-    {
-        $username = Auth::user()->email;//TODO make username mandatory?
-        return array("id" => $playerId, "username" => $username);
-    }
 
     private function ensureUserNotInGame($userId)
     {//!!! make sure user is not in some game already
@@ -209,15 +217,14 @@ class GamesManager
             if ($nOfPlayersBefore > 1) {
                 abort(403, 'game is full');
             }
-
-            $game->gameInfo->players[] = $this->makePlayerObject($playerId);
-            if ($nOfPlayersBefore+1 == 2){
-
-                $game->gameState = new GameState();//reset game state
-                $game->gameState->isGameGoing = true;
+            else if ($nOfPlayersBefore == 0){
+                $game->gameInfo->players[] = new Player(Auth::user()->email, $playerId, PlayerStatuses::waiting);
             }
+            else if ($nOfPlayersBefore == 1){
+                $game->gameInfo->players[] = new Player(Auth::user()->email, $playerId, PlayerStatuses::ready);
+                $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
 
-
+            }
 
             Cache::forever($gameId, serialize($game));
             return $game;
@@ -225,10 +232,60 @@ class GamesManager
 
     }
 
+    public function confirmPlaying($gameId, $playerId){
+        $gameStr = Cache::get($gameId, null);
 
-    public function watchGame($gameId, $playerId)
+        if ($gameStr == null) {
+            abort(403, 'game doesn\'t exist ');
+        } else {
+            $game = unserialize($gameStr);
+
+            $currentPlayer = null;
+            $i =0;
+            foreach ($game->gameInfo->players as $player){
+                if ($player->id == $playerId ){
+                    $currentPlayer = $game->gameInfo->players[$i];
+                    break;
+                }
+                $i++;
+            }
+
+            if (!$currentPlayer){
+                abort(403, 'impossible happened: confirming player is not in players ');
+            }
+
+
+            $currentPlayer->currentStatus =  PlayerStatuses::ready;
+
+
+            if (count($game->gameInfo->players) == 2
+                && $game->gameInfo->players[1-$i]->currentStatus == PlayerStatuses::ready){
+
+
+                $game->gameInfo->players[0]->currentStatus = PlayerStatuses::playing;
+                $game->gameInfo->players[1]->currentStatus = PlayerStatuses::playing;
+
+                $game->gameState = new GameState();//reset game state
+                $game->gameState->isGameGoing = true;
+                Cache::forever($gameId, serialize($game));
+                return array("gameStarted" => true, "gameInfo"=>$game->gameInfo, "gameState"=>$game->gameState);
+            }
+            else{
+
+                Cache::forever($gameId, serialize($game));
+                return array("gameStarted" => false, "gameInfo"=>$game->gameInfo);
+            }
+
+
+        }
+
+
+    }
+
+
+    public function watchGame($gameId, $watcherId)
     {
-        $this->ensureUserNotInGame($playerId);
+        $this->ensureUserNotInGame($watcherId);
 
         $gameStr = Cache::get($gameId, null);
 
@@ -237,7 +294,8 @@ class GamesManager
         } else {
             $game = unserialize($gameStr);
 
-            $game->gameInfo->watchers[] = $this->makePlayerObject($playerId);
+            $watcher = new Watcher(Auth::user()->email, $watcherId);
+            $game->gameInfo->watchers[] = $watcher;
 
             Cache::forever($gameId, serialize($game));
             return $game;
@@ -278,13 +336,13 @@ class GamesManager
                 $game = unserialize($gameStr);
 
                 foreach ($game->gameInfo->players as $player) {
-                    if ($player["id"] == $userId) {
+                    if ($player->id == $userId) {
                         return $game;
                     }
                 }
 
                 foreach ($game->gameInfo->watchers as $watcher) {
-                    if ($watcher["id"] == $userId) {
+                    if ($watcher->id == $userId) {
                         return $game;
                     }
                 }
@@ -360,7 +418,7 @@ class GamesManager
         $gameState = $game->gameState;
         $gameInfo = $game->gameInfo;
 
-        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]["id"] == $userId) {//if user's turn
+        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]->id == $userId) {//if user's turn
 
             if ($gameState->selectChecker == true) {//checker selection
 
@@ -442,7 +500,7 @@ class GamesManager
         $gameInfo = $game->gameInfo;
         $gameState = $game->gameState;
 
-        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]["id"] == $userId) {//if user's turn
+        if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]->id == $userId) {//if user's turn
             if ($gameState->selectChecker == false) {
 
 
