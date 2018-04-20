@@ -28,7 +28,7 @@ class UserMove extends WebSocketController
         $result = $gm->userMoveWrapper($row, $col, $userId, $gameId);
 
         if ($result == null){
-            return response()->json([], 204);
+            return response()->json([], 409);
         }
         else{
             return response()->json(['gameState'=>$result["gameState"],

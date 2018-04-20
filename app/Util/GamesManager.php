@@ -63,7 +63,7 @@ class GamesManager
                         $isPlayer = false;
                     }
                     else{
-                        abort(401, "impossible happened: player in game is not in game");
+                        abort(403, "impossible happened: player in game is not in game");
                     }
                 }
 
@@ -117,7 +117,7 @@ class GamesManager
             $game = unserialize($gameStr);
 
             if ($game->gameState->isGameGoing == false){
-                abort(401, "impossible happened: surrenderer from non-going game");
+                abort(403, "impossible happened: surrenderer from non-going game");
             }
 
 
@@ -130,7 +130,7 @@ class GamesManager
                     false, 0, "Surrendered" );
             }
             else{
-                abort(401, "impossible happened: surrenderer is not among players");
+                abort(403, "impossible happened: surrenderer is not among players");
             }
 
             $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
@@ -412,7 +412,7 @@ class GamesManager
 
         $gameStr = Cache::get($gameId);
         if ($gameStr == null) {
-            return null;//move not allowed!
+            abort(403, 'game doesn\'t exist ');
         }
         $game = unserialize($gameStr);
         $gameState = $game->gameState;
@@ -470,7 +470,7 @@ class GamesManager
             }
 
         } else {
-            return null;
+            abort(403, 'trying to move other player / in a non-going game ');
         }
 
 
@@ -481,7 +481,7 @@ class GamesManager
 
         $gameStr = Cache::get($gameId);
         if ($gameStr == null) {
-            return null;//move not allowed!
+            abort(403, 'game doesn\'t exist ');
         }
         $game = unserialize($gameStr);
 
@@ -615,6 +615,9 @@ class GamesManager
 
             }
 
+        }
+        else{
+            abort(403, 'trying to move other player / in a non-going game ');
         }
 
 

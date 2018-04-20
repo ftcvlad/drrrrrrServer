@@ -101,15 +101,16 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $contAssocArray = json_decode($response->getContent(),true);
 
         if ($response->status() == 401){//unauthorised
-            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status' =>401]));
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status' =>401, 'id'=>$messageId]));
             $con->close();
             return;
         }
-        else if ($response->status() == 403){//authorised, but cannot send this message (e.g. when not in game and trying to join game room)
-            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status'=>403]));
+        else if ($response->status() == 403){//forbidden
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status'=>403, 'id'=>$messageId]));
             return;
         }
-        else if ($response->status() == 204){//nothing to send as content
+        else if ($response->status() == 409){//for userMove and userPick. Request allowed by client application
+            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR,'status'=>409, 'id'=>$messageId]));
             return;
         }
 

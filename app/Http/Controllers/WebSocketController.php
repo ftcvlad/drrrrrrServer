@@ -11,11 +11,8 @@ class WebSocketController
 
     public function onOpen(Request $request)
     {
-        if (Auth::check()) {
-            return response()->json(['userId' => Auth::id()], 200);
-        }
+        return response()->json(['userId' => Auth::id()], 200);
 
-        return response()->json(['message' => 'unauthorised'], 401);
     }
 
     public function onClose(Request $request)

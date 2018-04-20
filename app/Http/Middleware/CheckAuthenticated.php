@@ -15,7 +15,7 @@ class CheckAuthenticated
     public function handle($request, Closure $next)
     {
         if (!Auth::check()){
-            return response()->json(['msg' => 'Unauthorized!'], 401);
+            return response()->json(['message' => 'Unauthorized!'], 401);
         }
 
         return $next($request);

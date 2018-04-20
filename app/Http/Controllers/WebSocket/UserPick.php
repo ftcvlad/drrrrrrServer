@@ -27,7 +27,7 @@ class UserPick extends WebSocketController
 
         $updatedGameState = $gm->userPick($row, $col, $userId, $gameId);
         if ($updatedGameState == null){//pick not possible
-            return response()->json([], 204);
+            return response()->json([], 409);
         }
         else{
             return response()->json(['gameState'=>$updatedGameState], 200);
