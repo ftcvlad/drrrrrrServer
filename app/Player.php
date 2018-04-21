@@ -25,12 +25,14 @@ class Player
     public $id;
     public $username;
     public $currentStatus;
+    public $rating;
 
-    function __construct($username, $userId, $currentStatus)
+    function __construct($username, $userId, $currentStatus, $rating)
     {
         $this->username = $username;
         $this->id = $userId;
         $this->currentStatus = $currentStatus;
+        $this->rating = $rating;
     }
 
 

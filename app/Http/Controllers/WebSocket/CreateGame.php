@@ -18,7 +18,10 @@ class CreateGame extends WebSocketController
 
     public function handleMessage(Request $request, GamesManager $gm)
     {
-        $createdGame = $gm->createGame(Auth::id());
+
+        $data = $request->get('data');
+
+        $createdGame = $gm->createGame(Auth::id(), $data->options);
         return response()->json(['currentGame'=>$createdGame], 200);
     }
 }

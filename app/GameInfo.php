@@ -14,12 +14,14 @@ class GameInfo
     public $gameId;
     public $players = [];
     public $watchers = [];
+    public $timeReserve = [];
 
 
-    function __construct($gameId, $player)
+    function __construct($gameId, $player, $options)
     {
         $this->gameId = $gameId;
         $this->players[] = $player;
         $this->watchers = [];
+        $this->timeReserve = $options->timeReserve;
     }
 }

@@ -139,10 +139,9 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToPlay64($gameId,$contAssocArray['currentGame']['gameInfo'],
                 MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
 
-            if ($messageType == MessageTypes::PLAY_GAME){
                 $this->sendToTable64($contAssocArray['currentGame']['gameInfo'],
                     MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
-            }
+
         }
         else if ($messageType == MessageTypes::CONFIRM_PLAYING){//++
 
@@ -172,7 +171,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
                 $opponentLost = $contAssocArray['result']['opponentLost'];
                 if ($opponentLost){
-                    
+
                     //BROADCAST_SURRENDER just to send game info :)
                     $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameInfo'],
                         MessageTypes::BROADCAST_SURRENDER, $con);
@@ -203,11 +202,11 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
                     MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
 
+                $this->sendToTable64($contAssocArray['result']['gameInfo'],
+                    MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
+
                 $isPlayer = $contAssocArray['result']['isPlayer'];
                 if ($isPlayer){
-
-                    $this->sendToTable64($contAssocArray['result']['gameInfo'],
-                        MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
 
                     $wasGameGoing = $contAssocArray['result']['wasGameGoing'];
                     if ($wasGameGoing){

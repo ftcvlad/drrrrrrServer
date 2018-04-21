@@ -22,7 +22,7 @@ class GameState
 
     function __construct()
     {
-        $this->boardState = $this->createStartTestGrid();
+        $this->boardState = $this->createStartTest2Grid();
     }
 
 
@@ -48,6 +48,18 @@ class GameState
             [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 1, 0, 0, 0, 0, 0],
             [0, 0, 0, 1, 0, 1, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0]];
+    }
+
+    private function createStartTest2Grid()
+    {
+        return [[0, -1, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 1, 0, 0, 0, 0, 0, -1],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
+            [0, 0, 0, 0, 0, 0, 0, 0],
             [0, 0, 0, 0, 0, 0, 0, 0]];
     }
 

@@ -249,7 +249,7 @@ class GamesManager
 
     //games -- stores uuids of all games
     //13223dfdf -- each game is stored separately in cache (key: uuid, value:game)
-    public function createGame($userId)
+    public function createGame($userId, $options)
     {
         $this->ensureUserNotInGame($userId);
 
@@ -259,9 +259,10 @@ class GamesManager
         $uuid = $this->generateUuid($gameIds);
 
 
-        $player = new Player(Auth::user()->email, $userId, PlayerStatuses::waiting);
+        $user = Auth::user();
+        $player = new Player($user->email, $userId, PlayerStatuses::waiting, $user->rating);
 
-        $createdGame = new Game($uuid, $player);
+        $createdGame = new Game($uuid, $player, $options);
 
 
         $gameIds[] = $uuid;
@@ -289,14 +290,19 @@ class GamesManager
         if ($nOfPlayersBefore > 1) {
             abort(403, 'game is full');
         }
-        else if ($nOfPlayersBefore == 0){
-            $game->gameInfo->players[] = new Player(Auth::user()->email, $playerId, PlayerStatuses::waiting);
-        }
-        else if ($nOfPlayersBefore == 1){
-            $game->gameInfo->players[] = new Player(Auth::user()->email, $playerId, PlayerStatuses::ready);
-            $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
+        else{
+            $user = Auth::user();
+            if ($nOfPlayersBefore == 0){
+                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::waiting, $user->rating);
+            }
+            else if ($nOfPlayersBefore == 1){
+                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::ready, $user->rating);
+                $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
+            }
 
         }
+
+
 
         Cache::forever($gameId, serialize($game));
         return $game;
