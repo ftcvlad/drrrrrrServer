@@ -26,7 +26,7 @@ class GamesManager
             if ($participantList[$i]->id == $userId) {
                 $participant = $participantList[$i];
                 array_splice($participantList, $i, 1);
-                return array("participant"=> $participant, "index"=>$i);
+                return $participant;
             }
         }
         return null;
@@ -70,6 +70,7 @@ class GamesManager
             else{
                 if (count($game->gameInfo->players) == 1){//1 player exit, but 1 still there
                     $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
+                    $game->gameInfo->players[0]->playsWhite = true;
                 }
 
                 $wasGameGoing = $game->gameState->isGameGoing;
@@ -79,9 +80,14 @@ class GamesManager
                 }
                 else{
 
-                   $opponentId = $game->gameInfo->players[0]->id;//remaining player
-                   $playsWhite = $leavingPlayer["index"] == 0;
-                   $gameResult = $this->finishGame($game, $userId, $opponentId, $playsWhite, 0, "Left" );
+                   $remainingPlayer =  $game->gameInfo->players[0];
+                   $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);//could also swap time if 1st player leaves
+
+                   $temp = $game->gameState->timeLeft[0];
+                   $game->gameState->timeLeft[0] =  $game->gameState->timeLeft[1];
+                   $game->gameState->timeLeft[1] = $temp;
+
+                   $gameResult = $this->finishGame($game, $userId, $remainingPlayer->id, $leavingPlayer->playsWhite, 0, "Left" );
 
 
                     Cache::forever($gameId, serialize($game));
@@ -109,7 +115,7 @@ class GamesManager
             abort(403, "impossible happened: surrenderer from non-going game");
         }
 
-
+        $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
         if ($game->gameInfo->players[0]->id == $userId ){
             $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]->id,
                 true, 0, "Surrendered" );
@@ -124,6 +130,7 @@ class GamesManager
 
         $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
         $game->gameInfo->players[1]->currentStatus = PlayerStatuses::confirming;
+
 
         Cache::forever($gameId, serialize($game));
 
@@ -183,6 +190,7 @@ class GamesManager
         }
         //TODO make sure userId in game (for decline!)
         if ($decision){//accepts
+            $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
             if ($game->gameInfo->players[0]->id == $userId ){
                 $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]->id,
                     true, 1, "Draw" );
@@ -228,6 +236,8 @@ class GamesManager
 
     public function finishGame(&$game, $initiatorId, $opponentId, $playsWhite, $matchResult, $reason){
         $game->gameState->isGameGoing = false;
+
+
         $sm = new StatsManager();
 
         $gameResult = $sm->saveGameResults($initiatorId, $opponentId, $matchResult, $playsWhite);
@@ -260,7 +270,7 @@ class GamesManager
 
 
         $user = Auth::user();
-        $player = new Player($user->email, $userId, PlayerStatuses::waiting, $user->rating);
+        $player = new Player($user->email, $userId, PlayerStatuses::waiting, $user->rating, true);
 
         $createdGame = new Game($uuid, $player, $options);
 
@@ -276,7 +286,40 @@ class GamesManager
 
 
 
+    public function handleTimeIsUp($gameId){
+        $game = $this->getGame($gameId);
+        $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
 
+        if ($game->gameState->isGameGoing && count($game->gameInfo->players) == 2){
+            if ($game->gameState->timeLeft[0]<=0){
+                $loser = $game->gameInfo->players[0];
+                $winner = $game->gameInfo->players[1];
+            }
+            else if ($game->gameState->timeLeft[1]<=0){
+                $winner = $game->gameInfo->players[0];
+                $loser = $game->gameInfo->players[1];
+            }
+            else {
+                //false request
+                abort(403, "impossible happened: client says time is up, but it is not!");
+            }
+
+
+            $gameResult = $this->finishGame($game, $loser->id, $winner->id,
+                $loser->playsWhite, 0, "Time is up" );
+            $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
+            $game->gameInfo->players[1]->currentStatus = PlayerStatuses::confirming;
+
+            Cache::forever($gameId, serialize($game));
+
+            return array("gameInfo"=>$game->gameInfo, "gameResult"=>$gameResult);
+
+        }
+        return null;
+
+
+
+    }
 
 
 
@@ -293,10 +336,10 @@ class GamesManager
         else{
             $user = Auth::user();
             if ($nOfPlayersBefore == 0){
-                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::waiting, $user->rating);
+                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::waiting, $user->rating, true);
             }
             else if ($nOfPlayersBefore == 1){
-                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::ready, $user->rating);
+                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::ready, $user->rating, false);
                 $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
             }
 
@@ -338,8 +381,9 @@ class GamesManager
             $game->gameInfo->players[0]->currentStatus = PlayerStatuses::playing;
             $game->gameInfo->players[1]->currentStatus = PlayerStatuses::playing;
 
-            $game->gameState = new GameState();//reset game state
+            $game->gameState = new GameState($game->gameInfo->timeReserve);//reset game state
             $game->gameState->isGameGoing = true;
+            $game->gameState->gameStartTime = time();
             Cache::forever($gameId, serialize($game));
             return array("gameStarted" => true, "gameInfo"=>$game->gameInfo, "gameState"=>$game->gameState);
         }
@@ -363,6 +407,8 @@ class GamesManager
 
         $watcher = new Watcher(Auth::user()->email, $watcherId);
         $game->gameInfo->watchers[] = $watcher;
+
+        $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
 
         Cache::forever($gameId, serialize($game));
         return $game;
@@ -570,6 +616,8 @@ class GamesManager
 
         if ($moveResult != null) {
 
+
+
             if ($moveResult['boardChanged'] && $moveResult['opponentLost']){
                 $gameResult = $this->finishGame($game, $userId,
                     $game->gameInfo->players[1-$game->gameState->currentPlayer]->id,
@@ -648,7 +696,7 @@ class GamesManager
                                 "finished" => true,
                                 "moveInfo" => [array("prev" => $prevPos, "next" => $nextPos, "killed" => null, "prevType" => $prevType)]);
 
-                            $opponentLost = $this->afterTurn($gameState, $turnMultiplier);
+                            $opponentLost = $this->afterTurn($gameState, $turnMultiplier, $gameInfo->timeReserve);
 
                             return array("boardChanged" => true, "gameState" => $gameState, "opponentLost"=>$opponentLost);
 
@@ -686,7 +734,7 @@ class GamesManager
                                 }
 
 
-                                $opponentLost = $this->afterTurn($gameState, $turnMultiplier);
+                                $opponentLost = $this->afterTurn($gameState, $turnMultiplier, $gameInfo->timeReserve);
 
                                 return array("boardChanged" => true, "gameState" => $gameState, "opponentLost"=>$opponentLost);
                             } else {//KILLED AND STILL MORE TO KILL
@@ -722,9 +770,30 @@ class GamesManager
 
     }
 
+    public function updatePlayerTimeLeft(&$game){
+        if ($game->gameState->isGameGoing){
+            $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
+            Cache::forever($game->gameInfo->gameId, serialize($game));
+        }
+    }
 
-    private function afterTurn(&$gameState, $turnMultiplier)
+    private function decreaseTimeLeft(&$gameState, $timeReserve){
+
+        if ($gameState->isGameGoing) {
+            $totalPassedTime = $timeReserve * 2 - ($gameState->timeLeft[0] + $gameState->timeLeft[1]);
+
+            $lastMoveTime = $gameState->gameStartTime + $totalPassedTime;
+            $currentTime = time();
+
+            $gameState->timeLeft[$gameState->currentPlayer] -= $currentTime - $lastMoveTime;
+        }
+    }
+
+    private function afterTurn(&$gameState, $turnMultiplier, $timeReserve)
     {
+
+        $this->decreaseTimeLeft($gameState, $timeReserve);
+
         $turnMultiplier *= -1;
         //check if enemy lost after my turn!
         $lost = $this->checkLost($gameState->boardState, $turnMultiplier);
@@ -732,6 +801,7 @@ class GamesManager
             return true;
         }
         else{
+
             //change turn
             $gameState->currentPlayer = $gameState->currentPlayer == 0 ? 1 : 0;
             return false;

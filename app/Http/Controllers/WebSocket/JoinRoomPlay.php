@@ -19,7 +19,11 @@ class JoinRoomPlay extends WebSocketController
     public function handleMessage(Request $request, GamesManager $gm){
 
         $targetGame = $gm->findGameInWhichUserParticipates(Auth::id());
+
         if ($targetGame != null){
+
+            $gm->updatePlayerTimeLeft($targetGame);
+
             return response()->json(['room' => $targetGame->gameInfo->gameId, 'currentGame'=>$targetGame], 200);
         }
         else{

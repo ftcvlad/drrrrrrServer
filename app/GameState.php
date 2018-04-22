@@ -19,9 +19,12 @@ class GameState
     public $possibleGoChoices = [];
     public $pickedChecker = [];//[row, col]
     public $moves = [];
+    public $timeLeft;//[1st, 2nd]
+    public $gameStartTime;
 
-    function __construct()
+    function __construct($timeReserve)
     {
+        $this->timeLeft = [$timeReserve, $timeReserve];
         $this->boardState = $this->createStartTest2Grid();
     }
 

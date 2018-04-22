@@ -109,7 +109,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status'=>403, 'id'=>$messageId]));
             return;
         }
-        else if ($response->status() == 409){//for userMove and userPick. Request allowed by client application
+        else if ($response->status() == 409){//for userMove, userPick, failed timeIsUp. Request allowed by client application, could not process it, but it's fine
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR,'status'=>409, 'id'=>$messageId]));
             return;
         }
@@ -255,6 +255,18 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToPlay64($gameId,$contAssocArray['gameInfo'],
                 MessageTypes::BROADCAST_CANCEL_DRAW_OFFER, $con);
 
+
+        }
+        else if ($messageType == MessageTypes::TIME_IS_UP){
+            $gameId = $contAssocArray['gameId'];
+
+
+            //BROADCAST_SURRENDER just to send game info :)
+            $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                MessageTypes::BROADCAST_SURRENDER, $con);
+
+            $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
+                MessageTypes::BROADCAST_GAME_FINISHED);
 
         }
 

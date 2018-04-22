@@ -20,7 +20,7 @@ class Game
     function __construct($gameId, $player, $options)
     {
         $this->gameInfo = new GameInfo($gameId, $player, $options);
-        $this->gameState = new GameState();
+        $this->gameState = new GameState($options->timeReserve);
 
 
 

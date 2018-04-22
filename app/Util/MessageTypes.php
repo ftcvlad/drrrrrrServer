@@ -49,4 +49,6 @@ abstract class MessageTypes
     const BROADCAST_CANCEL_DRAW_OFFER = "broadcastCancelDrawOffer";
     const CANCEL_DRAW_OFFER = "cancelDrawOffer";
 
+    const TIME_IS_UP = "timeIsUp";
+
 }
