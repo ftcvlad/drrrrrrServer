@@ -246,11 +246,21 @@ class GamesManager
             $gameResult[0]["stats"] = $sm->getPlayerWinDrawLoseStatistics($initiatorId);
             $gameResult[1]["stats"] = $sm->getPlayerWinDrawLoseStatistics($opponentId);
             $gameResult[0]["reason"] = $reason;
+          //  $game->gameInfo->players[]->rating = $gameResult[0]['ratingAfter'];
         }
         else{
             $gameResult[0]["stats"] = $sm->getPlayerWinDrawLoseStatistics($opponentId);
             $gameResult[1]["stats"] = $sm->getPlayerWinDrawLoseStatistics($initiatorId);
             $gameResult[1]["reason"] = $reason;
+        }
+
+        foreach($game->gameInfo->players as $player){
+            if ($player->id == $gameResult[0]['userId']){
+                $player->rating = $gameResult[0]['ratingAfter'];
+            }
+            else if ($player->id == $gameResult[1]['userId']){
+                $player->rating = $gameResult[1]['ratingAfter'];
+            }
         }
 
         return $gameResult;

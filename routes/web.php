@@ -22,14 +22,15 @@ Route::post('users', 'Auth\RegisterController@register');
 Route::get('/user', 'UserController@getUser');
 
 
-Route::get('/games/saved/{userId}', 'GameController@getSavedGames');
+
 
 
 //ajax requests requiring a cookie with session id
 Route::group(['middleware' => ['ajaxAuth']], function () {
         Route::delete('/games', 'GameController@removeAllGames');
 
-
+        Route::get('/games/saved/{userId}', 'GameController@getSavedGames');
+        Route::put('/games', 'GameController@saveGame');
 });
 
 //--------------WEB SOCKETS----------------
@@ -52,7 +53,6 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
     Route::get('/websocket/message/cancelDrawOffer', 'WebSocket\CancelDrawOffer@handleMessage');
     Route::get('/websocket/message/respondDrawOffer', 'WebSocket\RespondDrawOffer@handleMessage');
     Route::get('/websocket/message/timeIsUp', 'WebSocket\TimeIsUp@handleMessage');
-    Route::get('/websocket/message/saveGame', 'WebSocket\SaveGame@handleMessage');
     Route::get('/websocket/open', 'WebSocketController@onOpen');
 
 });

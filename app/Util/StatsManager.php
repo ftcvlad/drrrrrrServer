@@ -53,6 +53,7 @@ class StatsManager
                 'o_rating_after'=>$oppRatingAfter,
                 'opponent_id'=>$opponentId,
                 'user_id'=>$initiatorId,
+                "created_at" =>  time()
                 ]
         );
 
@@ -65,7 +66,7 @@ class StatsManager
             ->where('id', $opponentId)
             ->update(['rating' => $oppRatingAfter]);
 
-//TODO store this resId on server. or somehow else
+        //TODO store this resId on server. or somehow else
         $initiatorRes = array("resId"=>$resId, "userId"=>$initiatorId, "ratingBefore"=>$initiatorRatingBefore, "ratingAfter"=>$initiatorRatingAfter, "username"=>$initiator->email);
         $oppRes = array("resId"=>$resId, "userId"=>$opponentId, "ratingBefore"=>$oppRatingBefore, "ratingAfter"=>$oppRatingAfter, "username"=>$opponent->email);
 
@@ -128,6 +129,7 @@ class StatsManager
             ]);
 
         }
+
         try {
             DB::table("saved_game_user")->insert([
                 'user_id'=>$userId,
@@ -148,8 +150,16 @@ class StatsManager
 
 
         $games = DB::table("saved_game_user")
+                ->select('users.email as u_username', 'opponent.email as o_username',
+                    'description', 'moves', 'board_state','match_result', 'plays_white',
+                    'o_rating_after', 'o_rating_before', 'u_rating_after', 'u_rating_before',
+                    'game_result.created_at', 'game_result.user_id', 'game_result.opponent_id')
+
+
                 ->join('saved_game', 'saved_game.id', '=', 'saved_game_user.saved_game_id')
                 ->join('game_result', 'game_result.id', '=', 'saved_game.result_id')
+                ->join('users', 'users.id', '=', 'game_result.user_id')
+                ->join('users as opponent', 'opponent.id', '=', 'game_result.opponent_id')
                 ->where('saved_game_user.user_id', $userId)
                 ->get();
 

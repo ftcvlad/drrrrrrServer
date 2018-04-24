@@ -270,9 +270,6 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 MessageTypes::BROADCAST_GAME_FINISHED);
 
         }
-        else if ($messageType == MessageTypes::SAVE_GAME){
-            $this->sendToSelf204($con, $messageType, $messageId);
-        }
 
 
 

@@ -23,7 +23,7 @@ class CreateGameResultTable extends Migration
             $table->unsignedInteger('u_rating_before');
             $table->unsignedInteger('opponent_id');
             $table->unsignedInteger('user_id');
-            $table->timestamps();
+            $table->unsignedInteger('created_at');
 
             $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
             $table->foreign('opponent_id')->references('id')->on('users')->onDelete('cascade');
