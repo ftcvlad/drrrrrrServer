@@ -51,4 +51,6 @@ abstract class MessageTypes
 
     const TIME_IS_UP = "timeIsUp";
 
+    const SAVE_GAME = "saveGame";
+
 }

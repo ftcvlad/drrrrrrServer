@@ -100,6 +100,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $response = $this->handleLaravelRequest($con,  "/websocket/message/".$messageType, $msg);
         $contAssocArray = json_decode($response->getContent(),true);
 
+        //TODO abort message is null. Modify Exceptions/Handler
         if ($response->status() == 401){//unauthorised
             $con->send(json_encode(['servMessType'=>MessageTypes::ERROR, 'message' => $contAssocArray['message'], 'status' =>401, 'id'=>$messageId]));
             $con->close();
@@ -268,6 +269,9 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
                 MessageTypes::BROADCAST_GAME_FINISHED);
 
+        }
+        else if ($messageType == MessageTypes::SAVE_GAME){
+            $this->sendToSelf204($con, $messageType, $messageId);
         }
 
 

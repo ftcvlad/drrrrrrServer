@@ -17,7 +17,10 @@ class CreateGameResultTable extends Migration
             $table->increments('id');
             $table->unsignedTinyInteger('match_result');
             $table->boolean('plays_white');
-            $table->unsignedInteger('rating_after');
+            $table->unsignedInteger('o_rating_after');
+            $table->unsignedInteger('o_rating_before');
+            $table->unsignedInteger('u_rating_after');
+            $table->unsignedInteger('u_rating_before');
             $table->unsignedInteger('opponent_id');
             $table->unsignedInteger('user_id');
             $table->timestamps();

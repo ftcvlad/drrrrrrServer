@@ -323,6 +323,7 @@ class GamesManager
 
 
 
+
     public function playGame($gameId, $playerId)
     {
         $this->ensureUserNotInGame($playerId);
@@ -427,7 +428,7 @@ class GamesManager
         }
     }
 
-    private function getGame($gameId){
+    public function getGame($gameId){
         $gameStr = Cache::get($gameId, null);
 
         if ($gameStr == null) {
@@ -749,7 +750,7 @@ class GamesManager
                                 $gameState->pickedChecker = [$nextPos["row"], $nextPos["col"]];
 
 
-                                return array("boardChanged" => true, "gameState" => $gameState);
+                                return array("boardChanged" => true, "gameState" => $gameState, "opponentLost"=>false);
                             }
 
 

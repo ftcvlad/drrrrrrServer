@@ -15,9 +15,9 @@ class CreateSavedGameTable extends Migration
     {
         Schema::create('saved_game', function (Blueprint $table) {
             $table->increments('id');
-            $table->unsignedInteger('result_id');
+            $table->unsignedInteger('result_id')->unique();
             $table->text('moves');
-            $table->timestamps();
+            $table->text('board_state');
 
             $table->foreign('result_id')->references('id')->on('game_result');
         });

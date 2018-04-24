@@ -10,6 +10,7 @@ namespace App\Util;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Util\GamesManager;
 class StatsManager
 {
 
@@ -43,10 +44,13 @@ class StatsManager
         $oppRatingAfter = $this->calculateEloRating($oppRatingBefore, $initiatorRatingBefore, 2-$matchResult);
 
         //update initiator results
-        DB::table('game_result')->insert(
+        $resId = DB::table('game_result')->insertGetId(
             ['match_result' => $matchResult,
                 'plays_white' => $playsWhite,
-                'rating_after'=>$initiatorRatingAfter,
+                'u_rating_before'=>$initiatorRatingBefore,
+                'u_rating_after'=>$initiatorRatingAfter,
+                'o_rating_before'=>$oppRatingBefore,
+                'o_rating_after'=>$oppRatingAfter,
                 'opponent_id'=>$opponentId,
                 'user_id'=>$initiatorId,
                 ]
@@ -56,23 +60,14 @@ class StatsManager
             ->where('id', $initiatorId)
             ->update(['rating' => $initiatorRatingAfter]);
 
-        //update opponent results
-        DB::table('game_result')->insert(
-            ['match_result' => 2-$matchResult,
-                'plays_white' => !$playsWhite,
-                'rating_after'=>$oppRatingAfter,
-                'opponent_id'=>$initiatorId,
-                'user_id'=>$opponentId,
-            ]
-        );
 
         DB::table('users')
             ->where('id', $opponentId)
             ->update(['rating' => $oppRatingAfter]);
 
-
-        $initiatorRes = array("ratingBefore"=>$initiatorRatingBefore, "ratingAfter"=>$initiatorRatingAfter, "username"=>$initiator->email);
-        $oppRes = array("ratingBefore"=>$oppRatingBefore, "ratingAfter"=>$oppRatingAfter, "username"=>$opponent->email);
+//TODO store this resId on server. or somehow else
+        $initiatorRes = array("resId"=>$resId, "userId"=>$initiatorId, "ratingBefore"=>$initiatorRatingBefore, "ratingAfter"=>$initiatorRatingAfter, "username"=>$initiator->email);
+        $oppRes = array("resId"=>$resId, "userId"=>$opponentId, "ratingBefore"=>$oppRatingBefore, "ratingAfter"=>$oppRatingAfter, "username"=>$opponent->email);
 
         if ($playsWhite){
             return [$initiatorRes, $oppRes ];
@@ -89,10 +84,9 @@ class StatsManager
 
 
         $resultAggregates = DB::table('game_result')
-            ->select('match_result', DB::raw('count(*) as total'))
+            ->select('match_result', 'user_id', 'opponent_id')
             ->where("user_id", $userId)
-            ->groupBy('match_result')
-            ->orderBy('match_result')
+            ->orWhere("opponent_id", $userId)
             ->get();
 
         $losses = 0;
@@ -100,19 +94,73 @@ class StatsManager
         $wins = 0;
 
         foreach ($resultAggregates as $ra) {
-            if ($ra->match_result == 0){
-                $losses = $ra->total;
+            if ($ra->match_result == 1)$draws++;
+            if ($ra->user_id == $userId){
+                if ($ra->match_result == 0)$losses++;
+                if ($ra->match_result == 2)$wins++;
             }
-            else if ($ra->match_result == 1){
-                $draws = $ra->total;
-            }
-            else if ($ra->match_result == 2){
-                $wins = $ra->total;
+            else if ($ra->opponent_id == $userId){
+                if ($ra->match_result == 0)$wins++;
+                if ($ra->match_result == 2)$losses++;
             }
         }
 
         return array("losses"=>$losses, "draws"=>$draws, "wins"=>$wins);
 
+    }
+
+    public function saveGame($gameId, $userId, $resultId, $description){
+
+        $gm = new GamesManager();
+        $game = $gm->getGame($gameId);
+        $savedGameId = null;
+
+        $savedGame = DB::table("saved_game")->where('result_id', $resultId)->first();
+        if ($savedGame != null){
+            $savedGameId = $savedGame->id;
+        }
+        else {
+
+            $savedGameId = DB::table("saved_game")->insertGetId([
+                'result_id'=>$resultId,
+                'moves'=>serialize($game->gameState->moves),
+                'board_state'=>serialize($game->gameState->boardState)
+            ]);
+
+        }
+        try {
+            DB::table("saved_game_user")->insert([
+                'user_id'=>$userId,
+                'saved_game_id' => $savedGameId,
+                'description' => $description
+            ]);
+        } catch(\Illuminate\Database\QueryException $ex){
+            abort(403, "this user has already saved this game!");
+        }
+
+
+    }
+
+    public function getSavedGames($userId){
+
+
+
+
+
+        $games = DB::table("saved_game_user")
+                ->join('saved_game', 'saved_game.id', '=', 'saved_game_user.saved_game_id')
+                ->join('game_result', 'game_result.id', '=', 'saved_game.result_id')
+                ->where('saved_game_user.user_id', $userId)
+                ->get();
+
+
+        foreach ($games as $game){
+
+            $game->moves = unserialize($game->moves);
+            $game->board_state = unserialize($game->board_state);
+        }
+        //unserialize?
+        return $games;
     }
 
 
