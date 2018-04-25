@@ -11,6 +11,8 @@ namespace App\Util;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Util\GamesManager;
+use App\User;
+
 class StatsManager
 {
 
@@ -34,8 +36,8 @@ class StatsManager
     public function saveGameResults($initiatorId, $opponentId, $matchResult, $playsWhite){
 
 
-        $initiator = DB::table('users')->where('id', $initiatorId)->first();
-        $opponent = DB::table('users')->where('id', $opponentId)->first();
+        $initiator = User::where('id', '=', $initiatorId)->firstOrFail();
+        $opponent = User::where('id', '=', $opponentId)->firstOrFail();
 
         $initiatorRatingBefore = $initiator->rating;
         $oppRatingBefore = $opponent->rating;
@@ -57,18 +59,48 @@ class StatsManager
                 ]
         );
 
-        DB::table('users')
-            ->where('id', $initiatorId)
-            ->update(['rating' => $initiatorRatingAfter]);
 
 
-        DB::table('users')
-            ->where('id', $opponentId)
-            ->update(['rating' => $oppRatingAfter]);
+        if ($matchResult == 0){
+            $initiator->losses+=1;
+            $opponent->wins+=1;
+        }
+        else if ($matchResult == 1){
+            $initiator->draws+=1;
+            $opponent->draws+=1;
+        }
+        else if ($matchResult == 2){
+            $initiator->wins+=1;
+            $opponent->losses+=1;
+        }
+
+        $initiator->rating = $initiatorRatingAfter;
+        $opponent->rating = $oppRatingAfter;
+
+        $initiator->save();
+        $opponent->save();
+
 
         //TODO store this resId on server. or somehow else
-        $initiatorRes = array("resId"=>$resId, "userId"=>$initiatorId, "ratingBefore"=>$initiatorRatingBefore, "ratingAfter"=>$initiatorRatingAfter, "username"=>$initiator->email);
-        $oppRes = array("resId"=>$resId, "userId"=>$opponentId, "ratingBefore"=>$oppRatingBefore, "ratingAfter"=>$oppRatingAfter, "username"=>$opponent->email);
+        $initiatorRes = array("resId"=>$resId,
+                                "userId"=>$initiatorId,
+                                "ratingBefore"=>$initiatorRatingBefore,
+                                "ratingAfter"=>$initiatorRatingAfter,
+                                "username"=>$initiator->email,
+                                "stats"=>array("wins"=>$initiator->wins,
+                                                "losses"=>$initiator->losses,
+                                                "draws"=>$initiator->draws));
+
+
+        $oppRes = array("resId"=>$resId,
+                        "userId"=>$opponentId,
+                        "ratingBefore"=>$oppRatingBefore,
+                        "ratingAfter"=>$oppRatingAfter,
+                        "username"=>$opponent->email,
+                        "stats"=>array("wins"=>$opponent->wins,
+                                        "losses"=>$opponent->losses,
+                                        "draws"=>$opponent->draws));
+
 
         if ($playsWhite){
             return [$initiatorRes, $oppRes ];
@@ -81,34 +113,6 @@ class StatsManager
     }
 
 
-    public function getPlayerWinDrawLoseStatistics($userId){
-
-
-        $resultAggregates = DB::table('game_result')
-            ->select('match_result', 'user_id', 'opponent_id')
-            ->where("user_id", $userId)
-            ->orWhere("opponent_id", $userId)
-            ->get();
-
-        $losses = 0;
-        $draws = 0;
-        $wins = 0;
-
-        foreach ($resultAggregates as $ra) {
-            if ($ra->match_result == 1)$draws++;
-            if ($ra->user_id == $userId){
-                if ($ra->match_result == 0)$losses++;
-                if ($ra->match_result == 2)$wins++;
-            }
-            else if ($ra->opponent_id == $userId){
-                if ($ra->match_result == 0)$wins++;
-                if ($ra->match_result == 2)$losses++;
-            }
-        }
-
-        return array("losses"=>$losses, "draws"=>$draws, "wins"=>$wins);
-
-    }
 
     public function saveGame($gameId, $userId, $resultId, $description){
 
@@ -161,6 +165,7 @@ class StatsManager
                 ->join('users', 'users.id', '=', 'game_result.user_id')
                 ->join('users as opponent', 'opponent.id', '=', 'game_result.opponent_id')
                 ->where('saved_game_user.user_id', $userId)
+                ->orderBy('game_result.created_at', 'desc')
                 ->get();
 
 

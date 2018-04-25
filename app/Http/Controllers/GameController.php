@@ -30,8 +30,6 @@ class GameController extends Controller
     public function getSavedGames(Request $request, StatsManager $sm, $userId){
         $games = $sm->getSavedGames($userId);
 
-        Log::info(serialize($games));
-
         return response($games, 200);
 
     }

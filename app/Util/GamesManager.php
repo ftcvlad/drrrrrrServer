@@ -243,14 +243,9 @@ class GamesManager
         $gameResult = $sm->saveGameResults($initiatorId, $opponentId, $matchResult, $playsWhite);
 
         if ($playsWhite){
-            $gameResult[0]["stats"] = $sm->getPlayerWinDrawLoseStatistics($initiatorId);
-            $gameResult[1]["stats"] = $sm->getPlayerWinDrawLoseStatistics($opponentId);
             $gameResult[0]["reason"] = $reason;
-          //  $game->gameInfo->players[]->rating = $gameResult[0]['ratingAfter'];
         }
         else{
-            $gameResult[0]["stats"] = $sm->getPlayerWinDrawLoseStatistics($opponentId);
-            $gameResult[1]["stats"] = $sm->getPlayerWinDrawLoseStatistics($initiatorId);
             $gameResult[1]["reason"] = $reason;
         }
 

@@ -19,7 +19,8 @@ Route::post('session', 'Auth\LoginController@login')->name('login');
 Route::delete('session', 'Auth\LoginController@logout')->name('logout');
 Route::post('users', 'Auth\RegisterController@register');
 
-Route::get('/user', 'UserController@getUser');
+Route::get('/user/current', 'UserController@getCurrentUser');
+Route::get('/user/{userId}', 'UserController@getUser');
 
 
 

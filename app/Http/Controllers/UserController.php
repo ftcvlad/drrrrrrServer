@@ -7,15 +7,25 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
-
+use App\User;
 class UserController extends Controller
 {
-    public function getUser(Request $request)
+    public function getCurrentUser(Request $request)
     {
         $user = Auth::user();
         if ($user){
             return response($user, 200);
         }
         return response('', 404);
+    }
+
+
+    public function getUser(Request $request, $userId){
+
+
+        $user = User::findOrFail($userId);
+
+        return $user;
+
     }
 }

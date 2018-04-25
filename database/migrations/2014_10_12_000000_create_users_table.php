@@ -18,6 +18,9 @@ class CreateUsersTable extends Migration
             $table->string('name')->nullable();
             $table->string('email')->unique();
             $table->string('password');
+            $table->unsignedMediumInteger('wins');
+            $table->unsignedMediumInteger('draws');
+            $table->unsignedMediumInteger('losses');
             $table->rememberToken();
             $table->timestamps();
         });
