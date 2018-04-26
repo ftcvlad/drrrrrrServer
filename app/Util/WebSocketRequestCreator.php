@@ -83,7 +83,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
 
         if (!array_key_exists($con->resourceId, $this->clients)){
-            $this->clients[$con->resourceId] = array('conn'=>$con, 'room'=>'', 'userId'=>$currentUserId);
+            $this->clients[$con->resourceId] = array('conn'=>$con, 'rooms'=>array("gameRoom"=>"", "tableRoom"=>""), 'userId'=>$currentUserId);
         }
 
 
@@ -95,8 +95,21 @@ class WebSocketRequestCreator implements MessageComponentInterface
     public function onMessage(ConnectionInterface $con, $msg)
     {
 
+
+
+
         $messageId = json_decode($msg,true)['id'];
         $messageType = json_decode($msg,true)['msgType'];
+
+
+        if ($messageType == MessageTypes::LEAVE_ROOM_TABLES) {
+            $this->clients[$con->resourceId]['rooms']["tableRoom"] = "";
+            $this->sendToSelf204($con, $messageType, $messageId);
+            return;
+        }
+
+
+
         $response = $this->handleLaravelRequest($con,  "/websocket/message/".$messageType, $msg);
         $contAssocArray = json_decode($response->getContent(),true);
 
@@ -121,19 +134,23 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
         if ($messageType == MessageTypes::JOIN_ROOM_TABLES){//++
 
-            $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
+            $this->clients[$con->resourceId]['rooms']["tableRoom"] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['gameList'], $messageType, $messageId);
         }
         else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//++
-            $this->clients[$con->resourceId]['room'] = $contAssocArray['room'];
+
+            $this->clients[$con->resourceId]['rooms']["gameRoom"] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
         }
         else if ($messageType == MessageTypes::CREATE_GAME){//++
+            $gameId = $contAssocArray['currentGame']['gameInfo']['gameId'];
+            $this->clients[$con->resourceId]['rooms']["gameRoom"] = $gameId;
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
             $this->sendToTable64($contAssocArray['currentGame']['gameInfo'], MessageTypes::BROADCAST_GAME_CREATED, $con);
         }
         else if ($messageType == MessageTypes::PLAY_GAME || $messageType == MessageTypes::WATCH_GAME){
             $gameId = $contAssocArray['currentGame']['gameInfo']['gameId'];
+            $this->clients[$con->resourceId]['rooms']["gameRoom"] = $gameId;
 
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
 
@@ -193,7 +210,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
             $isLastPerson = $contAssocArray['result']['isLastPerson'];
             $gameId = $contAssocArray['gameId'];
 
-
+            $this->clients[$con->resourceId]['rooms']["gameRoom"] = "";
             $this->sendToSelf204($con, $messageType, $messageId);
 
             if ($isLastPerson){//game table removed
@@ -270,6 +287,9 @@ class WebSocketRequestCreator implements MessageComponentInterface
                 MessageTypes::BROADCAST_GAME_FINISHED);
 
         }
+        else if ($messageType == MessageTypes::UPDATE_TIME_LEFT){
+            $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
+        }
 
 
 
@@ -278,7 +298,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
     private function sendToTable64(&$data, $messageType, $con){
         foreach ($this->clients as $client){
-            if ($client['room'] == RoomCategories::TABLE_64_ROOM  && $client['conn'] != $con){//but self!
+            if ($client['rooms']['tableRoom'] == RoomCategories::TABLE_64_ROOM  && $client['conn'] != $con){//but self!
                 $client['conn']->send(json_encode(['servMessType'=>$messageType,
                     'data' => $data,
                     'status'=>200]));
@@ -296,7 +316,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
     private function sendToPlay64($gameId, &$data, $messageType, $con){//except self
         foreach ($this->clients as $client){
-            if ($client['room'] == $gameId  && $client['conn'] != $con){
+            if ($client['rooms']['gameRoom'] == $gameId  && $client['conn'] != $con){
                 $client['conn']->send(json_encode(['servMessType'=>$messageType,
                     'data' => $data,
                     'status'=>200]));
@@ -307,7 +327,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
     private function sendToAllPlay64($gameId, &$data, $messageType){//including self
         foreach ($this->clients as $client){
-            if ($client['room'] == $gameId){
+            if ($client['rooms']['gameRoom'] == $gameId){
                 $client['conn']->send(json_encode(['servMessType'=>$messageType,
                     'data' => $data,
                     'status'=>200]));

@@ -15,6 +15,7 @@ abstract class MessageTypes
 
     const JOIN_ROOM_PLAY = "joinRoomPlay";
     const JOIN_ROOM_TABLES = "joinRoomTables";
+    const LEAVE_ROOM_TABLES = "leaveRoomTables";
 
     const CREATE_GAME = "createGame";
     const BROADCAST_GAME_CREATED = "broadcastGameCreated";
@@ -50,6 +51,5 @@ abstract class MessageTypes
     const CANCEL_DRAW_OFFER = "cancelDrawOffer";
 
     const TIME_IS_UP = "timeIsUp";
-
-
+    const UPDATE_TIME_LEFT = "updateTimeLeft";
 }
