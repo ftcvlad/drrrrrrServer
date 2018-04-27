@@ -9,12 +9,12 @@
 namespace App\Http\Controllers\WebSocket;
 
 
-use App\Http\Controllers\WebSocketController;
+
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ConfirmPlaying extends WebSocketController
+class ConfirmPlaying
 {
     public function handleMessage(Request $request, GamesManager $gm)
     {

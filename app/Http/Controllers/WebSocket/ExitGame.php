@@ -9,13 +9,12 @@
 namespace App\Http\Controllers\WebSocket;
 
 
-use App\Http\Controllers\WebSocketController;
 
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class ExitGame extends WebSocketController
+class ExitGame
 {
     public function handleMessage(Request $request, GamesManager $gm){
 

@@ -8,12 +8,12 @@
 
 namespace App\Http\Controllers\WebSocket;
 
-use App\Http\Controllers\WebSocketController;
+
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class SuggestDraw extends WebSocketController
+class SuggestDraw
 {
 
     public function handleMessage(Request $request, GamesManager $gm){

@@ -11,10 +11,9 @@ namespace App\Http\Controllers\WebSocket;
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\WebSocketController;
 use Illuminate\Support\Facades\Cache;
 
-class SendChatMessage extends WebSocketController
+class SendChatMessage
 {
 
     public function handleMessage(Request $request, GamesManager $gm){

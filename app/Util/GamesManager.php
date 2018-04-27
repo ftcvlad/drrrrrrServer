@@ -21,6 +21,120 @@ use App\Util\StatsManager;
 class GamesManager
 {
 
+    public function removeDisconnectedStatus(&$game, $userId){
+
+        $reconnected = false;
+        foreach($game->gameInfo->players as $player){
+            if ($player->id == $userId && $player->currentStatus == PlayerStatuses::disconnected){
+                $reconnected = true;
+                break;
+            }
+        }
+
+        if ($reconnected){
+            foreach($game->gameInfo->players as $player){
+                $player->currentStatus = PlayerStatuses::playing;
+            }
+            Cache::forever($game->gameInfo->gameId, serialize($game));
+
+        }
+    }
+
+
+    public function disconnect($userId){
+
+        $game = $this->findGameInWhichUserParticipates($userId);
+        $gameId = $game->gameInfo->gameId;
+        $result = null;
+
+        if ($game == null){
+            return array("inGame"=>false,  "gameId"=>$gameId);
+        }
+        else{
+            $isLastPerson = count($game->gameInfo->players) + count($game->gameInfo->watchers) == 1;
+
+            if ($isLastPerson) {
+                $this->removeGameById($gameId);
+                return array("inGame"=>true, "isLastPerson" => true, "gameId"=>$gameId);
+            }
+            else{
+                $leavingWatcher = $this->removeParticipant($game->gameInfo->watchers, $userId);
+
+                if ($leavingWatcher != null){
+                    $result = array("gameId"=>$gameId, "inGame"=>false, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>true);
+                }
+                else{
+                    $disconnectedPlayer = null;
+                    $otherPlayer = null;
+                    foreach($game->gameInfo->players as $player){
+                        if ($player->id == $userId){
+                            $disconnectedPlayer = $player;
+                        }
+                        else{
+                            $otherPlayer = $player;
+                        }
+                    }
+
+
+                    if ($disconnectedPlayer->currentStatus == PlayerStatuses::waiting ){
+                        $game->gameInfo->players = [];
+                        $result = array("gameId"=>$gameId, "inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>true );
+                    }
+                    else if ($disconnectedPlayer->currentStatus == PlayerStatuses::dropper){
+
+
+                        if (count($game->gameInfo->watchers) > 0) {
+
+                            $game->gameInfo->players = [];
+                            $result = array("gameId"=>$gameId, "inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>true );
+                        }
+                        else {
+
+                            $this->removeGameById($gameId);
+                            return array("gameId"=>$gameId, "inGame"=>true, "isLastPerson" => true );
+                        }
+
+                    }
+
+
+                    else if ($disconnectedPlayer->currentStatus == PlayerStatuses::confirming
+                        || $disconnectedPlayer->currentStatus == PlayerStatuses::ready){
+
+                        $this->removeParticipant($game->gameInfo->players, $userId);
+                        $otherPlayer->currentStatus = PlayerStatuses::waiting;
+                        $result = array("gameId"=>$gameId, "inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>true );
+
+                    }
+                    else if ($disconnectedPlayer->currentStatus == PlayerStatuses::playing
+                        || $disconnectedPlayer->currentStatus == PlayerStatuses::suggestingDraw
+                        || $disconnectedPlayer->currentStatus == PlayerStatuses::resolvingDrawOffer){
+                        //keep disconnected player
+
+                        $disconnectedPlayer->currentStatus = PlayerStatuses::disconnected;
+                        $otherPlayer->currentStatus = PlayerStatuses::dropper;
+
+
+                        $result = array("gameId"=>$gameId, "inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>false );
+
+
+
+                    }
+
+
+
+
+                }//leaving player
+            }//is last person
+
+        }//in game
+
+        Cache::forever($gameId, serialize($game));
+
+
+        return $result;
+
+    }
+
     private function removeParticipant(&$participantList, $userId){
         for ($i = 0; $i < count($participantList); $i++) {
             if ($participantList[$i]->id == $userId) {
@@ -68,9 +182,11 @@ class GamesManager
                 return array("isLastPerson" => false, "isPlayer"=>false, "gameInfo"=>$game->gameInfo);
             }
             else{
-                if (count($game->gameInfo->players) == 1){//1 player exit, but 1 still there
-                    $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
-                    $game->gameInfo->players[0]->playsWhite = true;
+                if (count($game->gameInfo->players) == 1 &&
+                        $game->gameInfo->players[0]->currentStatus != PlayerStatuses::disconnected){//1 player exit, but 1 still there
+
+                        $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
+                        $game->gameInfo->players[0]->playsWhite = true;
                 }
 
                 $wasGameGoing = $game->gameState->isGameGoing;
@@ -81,13 +197,28 @@ class GamesManager
                 else{
 
                    $remainingPlayer =  $game->gameInfo->players[0];
+                   $gameResult = $this->finishGame($game, $userId, $remainingPlayer->id, $leavingPlayer->playsWhite, 0, "Left" );
+
+                    if ($remainingPlayer->currentStatus == PlayerStatuses::disconnected){
+                        if (count($game->gameInfo->watchers) > 0) {
+                            $game->gameInfo->players = [];
+                        }
+                        else {
+                            $this->removeGameById($gameId);
+                            return array("isLastPerson" => true );
+                        }
+                    }
+
+
+
                    $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);//could also swap time if 1st player leaves
 
                    $temp = $game->gameState->timeLeft[0];
                    $game->gameState->timeLeft[0] =  $game->gameState->timeLeft[1];
                    $game->gameState->timeLeft[1] = $temp;
 
-                   $gameResult = $this->finishGame($game, $userId, $remainingPlayer->id, $leavingPlayer->playsWhite, 0, "Left" );
+
+
 
 
                     Cache::forever($gameId, serialize($game));
@@ -108,12 +239,61 @@ class GamesManager
 
     }
 
+
+    public function dropOpponent($gameId, $userId){
+        $game = $this->getGame($gameId);
+        if ($game->gameState->isGameGoing == false){
+            abort(403, "impossible happened: dropping from non-going game");
+        }
+
+
+
+        if ($game->gameInfo->players[0]->id == $userId ){
+            if ($game->gameInfo->players[0]->currentStatus != PlayerStatuses::dropper ||
+                        $game->gameInfo->players[1]->currentStatus != PlayerStatuses::disconnected){
+                abort(403, "Me dropper, him disconnected");
+            }
+            $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[1]->id,
+                true, 1, "Dropped" );
+            $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
+            $this->removeParticipant($game->gameInfo->players, $game->gameInfo->players[1]->id);
+        }
+        else if ($game->gameInfo->players[1]->id == $userId){
+            if ($game->gameInfo->players[1]->currentStatus != PlayerStatuses::dropper ||
+                        $game->gameInfo->players[0]->currentStatus != PlayerStatuses::disconnected){
+                abort(403, "Me dropper, him disconnected");
+            }
+
+            $gameResult = $this->finishGame($game, $userId, $game->gameInfo->players[0]->id,
+                false, 1, "Dropped" );
+            $game->gameInfo->players[1]->currentStatus = PlayerStatuses::waiting;
+            $this->removeParticipant($game->gameInfo->players, $game->gameInfo->players[0]->id);
+        }
+        else{
+            abort(403, "impossible happened: dropper is not among players");
+        }
+
+        $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
+
+        Cache::forever($gameId, serialize($game));
+
+        return array("gameInfo"=>$game->gameInfo, "gameResult"=>$gameResult);
+
+    }
+
     public function surrender($gameId, $userId){
         $game = $this->getGame($gameId);
 
         if ($game->gameState->isGameGoing == false){
             abort(403, "impossible happened: surrenderer from non-going game");
         }
+
+        foreach($game->gameInfo->players as $player){
+            if ($player->currentStatus != PlayerStatuses::playing) {
+                abort(403, "impossible! surrender when a player not playing");
+            }
+        }
+
 
         $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
         if ($game->gameInfo->players[0]->id == $userId ){
@@ -147,6 +327,11 @@ class GamesManager
             abort(403, "impossible happened: draw in non-going game");
         }
 
+        foreach($game->gameInfo->players as $player){
+            if ($player->currentStatus != PlayerStatuses::playing){
+                abort("impossible happened: non-playing participate in draw offer");
+            }
+        }
 
         foreach($game->gameInfo->players as $player){
             if ($player->id == $userId){
@@ -176,6 +361,9 @@ class GamesManager
                 || $player->currentStatus == PlayerStatuses::resolvingDrawOffer){//'make sure' check
                 $player->currentStatus = PlayerStatuses::playing;
             }
+            else{
+                abort(403, "impossible! cancel draw when a player not resolving or suggesting");
+            }
         }
 
         Cache::forever($gameId, serialize($game));
@@ -188,6 +376,14 @@ class GamesManager
         if ($game->gameState->isGameGoing == false){
             abort(403, "impossible happened: responded draw in non-going game");
         }
+
+        foreach($game->gameInfo->players as $player){
+            if ($player->currentStatus != PlayerStatuses::suggestingDraw
+                && $player->currentStatus != PlayerStatuses::resolvingDrawOffer){//'make sure' check
+                abort(403, "impossible! decline/accept draw when a player not resolving or suggesting");
+            }
+        }
+
         //TODO make sure userId in game (for decline!)
         if ($decision){//accepts
             $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);
@@ -312,8 +508,45 @@ class GamesManager
 
             $gameResult = $this->finishGame($game, $loser->id, $winner->id,
                 $loser->playsWhite, 0, "Time is up" );
-            $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
-            $game->gameInfo->players[1]->currentStatus = PlayerStatuses::confirming;
+
+
+            foreach($game->gameInfo->players as $player){
+                if ($player->currentStatus == PlayerStatuses::playing
+                    || $player->currentStatus == PlayerStatuses::suggestingDraw
+                    || $player->currentStatus == PlayerStatuses::resolvingDrawOffer){
+                    $player->currentStatus =  PlayerStatuses::confirming;
+                }
+            }
+
+            foreach($game->gameInfo->players as $player){
+                if ($player->currentStatus == PlayerStatuses::ready
+                    || $player->currentStatus == PlayerStatuses::waiting
+                    || $player->currentStatus == PlayerStatuses::confirming){
+                    abort(403, "time up in non-playing status");
+                }
+            }
+
+
+            if ($game->gameInfo->players[0] == PlayerStatuses::dropper){
+                if ($game->gameInfo->players[1] == PlayerStatuses::disconnected){
+                    $game->gameInfo->players[0] = PlayerStatuses::waiting;
+                    $this->removeParticipant($game->gamInfo->players, $game->gameInfo->players[1]->id);
+                }
+                else{
+                    abort(403, "one dropper, another not disconnected");
+                }
+            }
+            if ($game->gameInfo->players[0] == PlayerStatuses::disconnected){
+                if ($game->gameInfo->players[1] == PlayerStatuses::dropper){
+                    $game->gameInfo->players[1] = PlayerStatuses::waiting;
+                    $this->removeParticipant($game->gamInfo->players, $game->gameInfo->players[0]->id);
+                }
+                else{
+                    abort(403, "one disconnected, another not dropper");
+                }
+            }
+
+
 
             Cache::forever($gameId, serialize($game));
 
@@ -345,6 +578,11 @@ class GamesManager
                 $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::waiting, $user->rating, true);
             }
             else if ($nOfPlayersBefore == 1){
+                if ($game->gameInfo->players[0]->currentStatus != PlayerStatuses::waiting){
+                    abort(403, "impossible! play game, but other not waiting for you!");
+                }
+
+
                 $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::ready, $user->rating, false);
                 $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
             }
@@ -375,6 +613,9 @@ class GamesManager
 
         if (!$currentPlayer){
             abort(403, 'impossible happened: confirming player is not in players ');
+        }
+        else if ($currentPlayer->currentStatus != PlayerStatuses::confirming){
+            abort(403, 'impossible happened: confirming player does not have confirming status! ');
         }
 
 
@@ -618,6 +859,9 @@ class GamesManager
         }
         $game = unserialize($gameStr);
 
+
+
+
         $moveResult = $this->userMove($row, $col, $userId, $game);//boardChanged, gameState, opponentLost
 
         if ($moveResult != null) {
@@ -631,9 +875,24 @@ class GamesManager
                     );
                 $moveResult['gameResult'] = $gameResult;
 
-                foreach($game->gameInfo->players as $player){
-                    $player->currentStatus = PlayerStatuses::confirming;
+
+                for ($i = count($game->gameInfo->players)-1; $i>=0; $i--){
+
+                    if ($game->gameInfo->players[$i]->currentStatus == PlayerStatuses::playing
+                        || $game->gameInfo->players[$i]->currentStatus == PlayerStatuses::suggestingDraw
+                        || $game->gameInfo->players[$i]->currentStatus == PlayerStatuses::resolvingDrawOffer){
+                        $game->gameInfo->players[$i]->currentStatus =  PlayerStatuses::confirming;
+                    }
+                    else if ($game->gameInfo->players[$i]->currentStatus == PlayerStatuses::dropper){
+                        $game->gameInfo->players[$i]->currentStatus =  PlayerStatuses::waiting;
+                    }
+                    else if ($game->gameInfo->players[$i]->currentStatus == PlayerStatuses::disconnected){
+                        $this->removeParticipant($game->gameInfo->players, $game->gameInfo->players[$i]->id);
+                    }
                 }
+
+
+
 
                 $moveResult['gameInfo'] = $game->gameInfo;
 
@@ -653,6 +912,8 @@ class GamesManager
         $gameState = $game->gameState;
 
         if ($gameState->isGameGoing && $gameInfo->players[$gameState->currentPlayer]->id == $userId) {//if user's turn
+
+
             if ($gameState->selectChecker == false) {
 
 
@@ -666,6 +927,7 @@ class GamesManager
                     $gameState->possibleGoChoices = [];
                     return array("boardChanged" => false, "gameState" => $gameState);
                 }
+
 
                 $turnMultiplier = 1;
                 if ($gameState->currentPlayer == 1) {

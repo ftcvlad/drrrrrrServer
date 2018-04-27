@@ -9,11 +9,10 @@
 namespace App\Http\Controllers\WebSocket;
 
 use App\Util\GamesManager;
-use App\Http\Controllers\WebSocketController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class CreateGame extends WebSocketController
+class CreateGame
 {
 
     public function handleMessage(Request $request, GamesManager $gm)

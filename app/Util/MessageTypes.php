@@ -52,4 +52,7 @@ abstract class MessageTypes
 
     const TIME_IS_UP = "timeIsUp";
     const UPDATE_TIME_LEFT = "updateTimeLeft";
+
+    const DROP_OPPONENT = "dropOpponent";
+
 }

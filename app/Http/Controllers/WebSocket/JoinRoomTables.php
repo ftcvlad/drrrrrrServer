@@ -8,14 +8,14 @@
 
 namespace App\Http\Controllers\WebSocket;
 
-use App\Http\Controllers\WebSocketController;
+
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use App\Util\RoomCategories;
 use Illuminate\Support\Facades\Auth;
 use App\GameInfo;
 
-class JoinRoomTables extends WebSocketController
+class JoinRoomTables
 {
 
     private function createGameInfoList(&$games){

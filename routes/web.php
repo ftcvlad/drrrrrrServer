@@ -55,12 +55,13 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
     Route::get('/websocket/message/respondDrawOffer', 'WebSocket\RespondDrawOffer@handleMessage');
     Route::get('/websocket/message/timeIsUp', 'WebSocket\TimeIsUp@handleMessage');
     Route::get('/websocket/message/updateTimeLeft', 'WebSocket\UpdateTimeLeft@handleMessage');
+    Route::get('/websocket/message/dropOpponent', 'WebSocket\DropOpponent@handleMessage');
 
-
-    Route::get('/websocket/open', 'WebSocketController@onOpen');
+    Route::get('/websocket/open', 'WebSocket\WebSocketController@onOpen');
+    Route::get('/websocket/close', 'WebSocket\WebSocketController@onClose');
 
 });
 
 
-Route::get('/websocket/close', 'WebSocketController@onClose');
-Route::get('/websocket/error', 'WebSocketController@onError');
+
+Route::get('/websocket/error', 'Websocket\WebSocketController@onError');

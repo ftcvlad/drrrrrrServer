@@ -10,10 +10,9 @@ namespace App\Http\Controllers\WebSocket;
 
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\WebSocketController;
 
-class TimeIsUp extends WebSocketController
+
+class TimeIsUp
 {
 
     public function handleMessage(Request $request, GamesManager $gm){

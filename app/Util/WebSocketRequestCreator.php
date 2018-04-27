@@ -139,8 +139,13 @@ class WebSocketRequestCreator implements MessageComponentInterface
         }
         else if ($messageType == MessageTypes::JOIN_ROOM_PLAY){//++
 
+            $gameId = $contAssocArray['currentGame']["gameInfo"]["gameId"];
             $this->clients[$con->resourceId]['rooms']["gameRoom"] = $contAssocArray['room'];
             $this->sendToSelf($con, $contAssocArray['currentGame'], $messageType, $messageId);
+
+            $this->sendToPlay64($gameId,$contAssocArray['currentGame']['gameInfo'],
+                MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
+
         }
         else if ($messageType == MessageTypes::CREATE_GAME){//++
             $gameId = $contAssocArray['currentGame']['gameInfo']['gameId'];
@@ -290,6 +295,23 @@ class WebSocketRequestCreator implements MessageComponentInterface
         else if ($messageType == MessageTypes::UPDATE_TIME_LEFT){
             $this->sendToSelf($con, $contAssocArray['gameState'], $messageType, $messageId);
         }
+        else if ($messageType == MessageTypes::DROP_OPPONENT){
+            $gameId = $contAssocArray['gameId'];
+
+
+
+            $this->sendToSelf($con, $contAssocArray['result']['gameInfo'], $messageType, $messageId);
+
+
+            $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
+            $this->sendToTable64($contAssocArray['result']['gameInfo'],
+                MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
+
+
+            $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
+                MessageTypes::BROADCAST_GAME_FINISHED);
+        }
 
 
 
@@ -342,10 +364,43 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
     public function onClose(ConnectionInterface $con)
     {
-        //$this->handleLaravelRequest($con, '/websocket/close');
-       //$this->clients->detach($con);
-
         unset($this->clients[$con->resourceId]);
+
+        $response = $this->handleLaravelRequest($con, '/websocket/close');
+        $contAssocArray = json_decode($response->getContent(),true);
+
+        $result = $contAssocArray["result"];
+        $gameId = $result["gameId"];
+
+        Log::info(1);
+        //$result = array("inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>false );
+        if (!$result["inGame"]){
+            Log::info(2);
+            return;
+        }
+        else{
+            Log::info(3);
+            if ($result["isLastPerson"]){
+                Log::info(4);
+                $this->sendToTable64($gameId,MessageTypes::BROADCAST_TABLE_REMOVED, $con);
+            }
+            else {
+                Log::info(5);
+                $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
+                    MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
+
+                if ($result["left"]){
+                    Log::info(6);
+                    $this->sendToTable64($contAssocArray['result']['gameInfo'],
+                        MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
+                }
+
+            }
+        }
+
+
+
+
     }
     public function onError(ConnectionInterface $con, \Exception $e)
     {

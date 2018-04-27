@@ -8,12 +8,12 @@
 
 namespace App\Http\Controllers\WebSocket;
 
-use App\Http\Controllers\WebSocketController;
+
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class WatchGame extends WebSocketController
+class WatchGame
 {
 
     public function handleMessage(Request $request, GamesManager $gm)

@@ -9,12 +9,12 @@
 namespace App\Http\Controllers\WebSocket;
 
 
-use App\Http\Controllers\WebSocketController;
+
 use App\Util\GamesManager;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
-class RespondDrawOffer extends WebSocketController
+class RespondDrawOffer
 {
     public function handleMessage(Request $request, GamesManager $gm){
 

@@ -17,6 +17,8 @@ abstract class PlayerStatuses
     const ready = 3;
     const suggestingDraw = 4;
     const resolvingDrawOffer = 5;
+    const disconnected = 6;
+    const dropper = 7;
 }
 
 class Player

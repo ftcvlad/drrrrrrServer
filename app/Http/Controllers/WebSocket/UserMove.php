@@ -11,10 +11,9 @@ namespace App\Http\Controllers\WebSocket;
 use Illuminate\Http\Request;
 
 use Illuminate\Support\Facades\Auth;
-use App\Http\Controllers\WebSocketController;
 use App\Util\GamesManager;
 
-class UserMove extends WebSocketController
+class UserMove
 {
 
     public function handleMessage(Request $request, GamesManager $gm){
