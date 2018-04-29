@@ -20,10 +20,21 @@ class WebSocketController
     {
 
         $userId = Auth::id();
-        $result = $gm->disconnect($userId);
+
+        $game = $gm->findGameInWhichUserParticipates($userId);
+        if ($game == null){
+            return null;
+        }
+        else{
+            $result = $gm->disconnect($game, $userId);
+            return response()->json(['result' => $result], 200);
+        }
 
 
-        return response()->json(['result' => $result], 200);
+
+
+
+
 
 
     }

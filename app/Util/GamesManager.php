@@ -41,9 +41,11 @@ class GamesManager
     }
 
 
-    public function disconnect($userId){
+    public function disconnect(&$game, $userId){
 
-        $game = $this->findGameInWhichUserParticipates($userId);
+
+
+
         $gameId = $game->gameInfo->gameId;
         $result = null;
 
@@ -502,12 +504,20 @@ class GamesManager
             }
             else {
                 //false request
-                abort(403, "impossible happened: client says time is up, but it is not!");
+                abort(404, "impossible happened: client says time is up, but it is not!");
             }
 
 
             $gameResult = $this->finishGame($game, $loser->id, $winner->id,
                 $loser->playsWhite, 0, "Time is up" );
+
+            foreach($game->gameInfo->players as $player){
+                if ($player->currentStatus == PlayerStatuses::ready
+                    || $player->currentStatus == PlayerStatuses::waiting
+                    || $player->currentStatus == PlayerStatuses::confirming){
+                    abort(405, "time up in non-playing status");
+                }
+            }
 
 
             foreach($game->gameInfo->players as $player){
@@ -518,31 +528,24 @@ class GamesManager
                 }
             }
 
-            foreach($game->gameInfo->players as $player){
-                if ($player->currentStatus == PlayerStatuses::ready
-                    || $player->currentStatus == PlayerStatuses::waiting
-                    || $player->currentStatus == PlayerStatuses::confirming){
-                    abort(403, "time up in non-playing status");
-                }
-            }
 
 
-            if ($game->gameInfo->players[0] == PlayerStatuses::dropper){
-                if ($game->gameInfo->players[1] == PlayerStatuses::disconnected){
-                    $game->gameInfo->players[0] = PlayerStatuses::waiting;
-                    $this->removeParticipant($game->gamInfo->players, $game->gameInfo->players[1]->id);
+            if ($game->gameInfo->players[0]->currentStatus == PlayerStatuses::dropper){
+                if ($game->gameInfo->players[1]->currentStatus == PlayerStatuses::disconnected){
+                    $game->gameInfo->players[0]->currentStatus = PlayerStatuses::waiting;
+                    $this->removeParticipant($game->gameInfo->players, $game->gameInfo->players[1]->id);
                 }
                 else{
-                    abort(403, "one dropper, another not disconnected");
+                    abort(406, "one dropper, another not disconnected");
                 }
             }
-            if ($game->gameInfo->players[0] == PlayerStatuses::disconnected){
-                if ($game->gameInfo->players[1] == PlayerStatuses::dropper){
-                    $game->gameInfo->players[1] = PlayerStatuses::waiting;
-                    $this->removeParticipant($game->gamInfo->players, $game->gameInfo->players[0]->id);
+            if ($game->gameInfo->players[0]->currentStatus == PlayerStatuses::disconnected){
+                if ($game->gameInfo->players[1]->currentStatus == PlayerStatuses::dropper){
+                    $game->gameInfo->players[1]->currentStatus = PlayerStatuses::waiting;
+                    $this->removeParticipant($game->gameInfo->players, $game->gameInfo->players[0]->id);
                 }
                 else{
-                    abort(403, "one disconnected, another not dropper");
+                    abort(407, "one disconnected, another not dropper");
                 }
             }
 
@@ -666,7 +669,7 @@ class GamesManager
 
     //************************HELPER functions *************
 
-    private function ensureUserNotInGame($userId)
+    public function ensureUserNotInGame($userId)
     {//!!! make sure user is not in some game already
         $currentGame = $this->findGameInWhichUserParticipates($userId);
         if ($currentGame != null) {
@@ -686,7 +689,7 @@ class GamesManager
         return $game;
     }
 
-    private function removeGameById($gameId){
+    public function removeGameById($gameId){
         Cache::forget($gameId);
 
         $gameIds = Cache::get('gameIds');
@@ -740,7 +743,7 @@ class GamesManager
         return null;
     }
 
-    private function generateUuid(&$gameIds)
+    public function generateUuid(&$gameIds)
     {
 
         $success = false;
@@ -781,14 +784,12 @@ class GamesManager
     //********************** MOVEMENT of pieces **********************
 
 
-    public function userPick($row, $col, $userId, $gameId)
+
+
+    public function userPick($row, $col, $userId, $gameId, &$game)
     {
 
-        $gameStr = Cache::get($gameId);
-        if ($gameStr == null) {
-            abort(403, 'game doesn\'t exist ');
-        }
-        $game = unserialize($gameStr);
+
         $gameState = $game->gameState;
         $gameInfo = $game->gameInfo;
 
@@ -853,17 +854,11 @@ class GamesManager
     public function userMoveWrapper($row, $col, $userId, $gameId)
     {
 
-        $gameStr = Cache::get($gameId);
-        if ($gameStr == null) {
-            abort(403, 'game doesn\'t exist ');
-        }
-        $game = unserialize($gameStr);
-
-
+        $game = $this->getGame($gameId);
 
 
         $moveResult = $this->userMove($row, $col, $userId, $game);//boardChanged, gameState, opponentLost
-
+        Log::info($moveResult);
         if ($moveResult != null) {
 
 
@@ -980,17 +975,17 @@ class GamesManager
                                 $gameState->possibleGoChoices = $this->getCheckerBeatOptions($nextPos["row"], $nextPos["col"], $gameState->boardState, $turnMultiplier);//cannot jump over 66
                             }
 
-
+                            $totalMoves = count($gameState->moves);
                             if (count($gameState->possibleGoChoices) == 0) {//KILLED AND NO MORE TO KILL
 
 
-                                if ($gameState->moves[count($gameState->moves) - 1]["player"] != $gameState->currentPlayer) {//1st move (in sequence) by this player
+                                if ( $totalMoves == 0 || $gameState->moves[$totalMoves - 1]["player"] != $gameState->currentPlayer) {//1st move (in sequence) by this player
                                     $gameState->moves[] = array("player" => $gameState->currentPlayer,//new move
                                         "finished" => true,
                                         "moveInfo" => [array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType)]);
                                 } else {
-                                    $gameState->moves[count($gameState->moves) - 1]["moveInfo"][] = array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType);//continuing move
-                                    $gameState->moves[count($gameState->moves) - 1]["finished"] = true;
+                                    $gameState->moves[$totalMoves - 1]["moveInfo"][] = array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType);//continuing move
+                                    $gameState->moves[$totalMoves - 1]["finished"] = true;
                                 }
                                 $gameState->selectChecker = true;
                                 $gameState->pickedChecker = [];
@@ -1006,12 +1001,12 @@ class GamesManager
 
                                 return array("boardChanged" => true, "gameState" => $gameState, "opponentLost"=>$opponentLost);
                             } else {//KILLED AND STILL MORE TO KILL
-                                if ($gameState->moves[count($gameState->moves) - 1]["player"] != $gameState->currentPlayer) {//1st move (in sequence) by this player
+                                if ($totalMoves == 0 || $gameState->moves[$totalMoves - 1]["player"] != $gameState->currentPlayer) {//1st move (in sequence) by this player
                                     $gameState->moves[] = array("player" => $gameState->currentPlayer,//new move
                                         "finished" => false,
                                         "moveInfo" => [array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType)]);
                                 } else {
-                                    $gameState->moves[count($gameState->moves) - 1]["moveInfo"][] = array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType);//continuing move
+                                    $gameState->moves[$totalMoves - 1]["moveInfo"][] = array("prev" => $prevPos, "next" => $nextPos, "killed" => $killed, "prevType" => $prevType);//continuing move
                                 }
 
                                 $gameState->pickedChecker = [$nextPos["row"], $nextPos["col"]];
@@ -1045,7 +1040,7 @@ class GamesManager
         }
     }
 
-    private function decreaseTimeLeft(&$gameState, $timeReserve){
+    public function decreaseTimeLeft(&$gameState, $timeReserve){
 
         if ($gameState->isGameGoing) {
             $totalPassedTime = $timeReserve * 2 - ($gameState->timeLeft[0] + $gameState->timeLeft[1]);

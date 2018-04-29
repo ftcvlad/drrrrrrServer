@@ -128,6 +128,20 @@ class WebSocketRequestCreator implements MessageComponentInterface
             return;
         }
 
+
+//        else if ($response->status() == 404){//for userMove, userPick, failed timeIsUp. Request allowed by client application, could not process it, but it's fine
+//            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR,'status'=>404, 'id'=>$messageId]));
+//            return;
+//        }
+//        else if ($response->status() == 405){//for userMove, userPick, failed timeIsUp. Request allowed by client application, could not process it, but it's fine
+//            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR,'status'=>405, 'id'=>$messageId]));
+//            return;
+//        }
+//        else if ($response->status() == 406){//for userMove, userPick, failed timeIsUp. Request allowed by client application, could not process it, but it's fine
+//            $con->send(json_encode(['servMessType'=>MessageTypes::ERROR,'status'=>406, 'id'=>$messageId]));
+//            return;
+//        }
+
         //self , table64-self, table64+play64-self, play64,
 
 
@@ -286,7 +300,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
             //BROADCAST_SURRENDER just to send game info :)
             $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameInfo'],
-                MessageTypes::BROADCAST_SURRENDER, $con);
+                MessageTypes::BROADCAST_SURRENDER);
 
             $this->sendToAllPlay64($gameId,$contAssocArray['result']['gameResult'],
                 MessageTypes::BROADCAST_GAME_FINISHED);
@@ -367,30 +381,29 @@ class WebSocketRequestCreator implements MessageComponentInterface
         unset($this->clients[$con->resourceId]);
 
         $response = $this->handleLaravelRequest($con, '/websocket/close');
+        if ($response == null){
+            return;
+        }
+
         $contAssocArray = json_decode($response->getContent(),true);
 
         $result = $contAssocArray["result"];
         $gameId = $result["gameId"];
 
-        Log::info(1);
+
         //$result = array("inGame"=>true, "isLastPerson" => false, "gameInfo"=>$game->gameInfo, "left"=>false );
         if (!$result["inGame"]){
-            Log::info(2);
             return;
         }
         else{
-            Log::info(3);
             if ($result["isLastPerson"]){
-                Log::info(4);
                 $this->sendToTable64($gameId,MessageTypes::BROADCAST_TABLE_REMOVED, $con);
             }
             else {
-                Log::info(5);
                 $this->sendToPlay64($gameId,$contAssocArray['result']['gameInfo'],
                     MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_table, $con);
 
                 if ($result["left"]){
-                    Log::info(6);
                     $this->sendToTable64($contAssocArray['result']['gameInfo'],
                         MessageTypes::BROADCAST_PARTICIPANTS_CHANGED_to_tables, $con);
                 }

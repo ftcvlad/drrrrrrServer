@@ -23,8 +23,9 @@ class UserPick
         $col = $data->moveInfo->c;
         $gameId = $data->gameId;
         $userId = Auth::id();
+        $game = $gm->getGame($gameId);
 
-        $updatedGameState = $gm->userPick($row, $col, $userId, $gameId);
+        $updatedGameState = $gm->userPick($row, $col, $userId, $gameId,$game );
         if ($updatedGameState == null){//pick not possible
             return response()->json([], 409);
         }

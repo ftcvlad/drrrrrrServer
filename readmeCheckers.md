@@ -19,9 +19,6 @@ redis-cli keys "*"
 TODO
 1) csrf middleware + send token as here: https://security.stackexchange.com/questions/36468/csrf-protection-and-single-page-apps
 2) before initial fetch user logged in status incorrrect. Don't render anything (or just spinner?) until initial fetch done?
-3) react-redux-fetch is missing fetch options. Wait if resolved or npm install from fork!
-https://stackoverflow.com/questions/40528053/npm-install-and-build-of-forked-github-repo
-fetchRequest, container, requestBuilder
 4) SESSION_LIFETIME in env back to 120? 
 
 
