@@ -28,4 +28,23 @@ class UserController extends Controller
         return $user;
 
     }
+
+    public function updateUser(Request $request, $userId){
+
+        Log::info("good1");
+        $birthday = $request->input("birthday");
+        $username = $request->input("username");
+        $gender = $request->input("gender");
+
+
+        $user = User::find($userId);
+
+        $user->username = $username;
+        $user->birthday = $birthday;
+        $user->gender = $gender;
+
+        $user->save();
+        return $user;
+
+    }
 }

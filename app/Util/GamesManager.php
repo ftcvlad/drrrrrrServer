@@ -473,7 +473,7 @@ class GamesManager
 
 
         $user = Auth::user();
-        $player = new Player($user->email, $userId, PlayerStatuses::waiting, $user->rating, true);
+        $player = new Player($user->username, $userId, PlayerStatuses::waiting, $user->rating, true);
 
         $createdGame = new Game($uuid, $player, $options);
 
@@ -578,7 +578,7 @@ class GamesManager
         else{
             $user = Auth::user();
             if ($nOfPlayersBefore == 0){
-                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::waiting, $user->rating, true);
+                $game->gameInfo->players[] = new Player($user->username, $playerId, PlayerStatuses::waiting, $user->rating, true);
             }
             else if ($nOfPlayersBefore == 1){
                 if ($game->gameInfo->players[0]->currentStatus != PlayerStatuses::waiting){
@@ -586,7 +586,7 @@ class GamesManager
                 }
 
 
-                $game->gameInfo->players[] = new Player($user->email, $playerId, PlayerStatuses::ready, $user->rating, false);
+                $game->gameInfo->players[] = new Player($user->username, $playerId, PlayerStatuses::ready, $user->rating, false);
                 $game->gameInfo->players[0]->currentStatus = PlayerStatuses::confirming;
             }
 
@@ -655,7 +655,7 @@ class GamesManager
 
         $game = $this->getGame($gameId);
 
-        $watcher = new Watcher(Auth::user()->email, $watcherId);
+        $watcher = new Watcher(Auth::user()->username, $watcherId);
         $game->gameInfo->watchers[] = $watcher;
 
         $this->decreaseTimeLeft($game->gameState, $game->gameInfo->timeReserve);

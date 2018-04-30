@@ -22,7 +22,7 @@ Route::post('users', 'Auth\RegisterController@register');
 Route::get('/user/current', 'UserController@getCurrentUser');
 Route::get('/user/{userId}', 'UserController@getUser');
 
-
+Route::put('/user/{userId}', 'UserController@updateUser');
 
 
 

@@ -24,7 +24,7 @@ class SendChatMessage
         $gameId = $data->gameId;
         $userId = Auth::id();
         $user = Auth::user();
-        $userEmail = $user->email;
+        $username = $user->username;
 
 
         //check if sending user participates in the game
@@ -33,7 +33,7 @@ class SendChatMessage
             return response()->json(['message' => 'user must participate in game to send messages'], 403);
         }
         else{
-            $msg =  array("msgText"=>$messageText, "sender"=>$userEmail, "senderId"=>$userId);
+            $msg =  array("msgText"=>$messageText, "sender"=>$username, "senderId"=>$userId);
             $game->chatMessages[] = $msg;
 
             Cache::forever($gameId, serialize($game));
