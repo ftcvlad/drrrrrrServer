@@ -31,7 +31,6 @@ class UserController extends Controller
 
     public function updateUser(Request $request, $userId){
 
-        Log::info("good1");
         $birthday = $request->input("birthday");
         $username = $request->input("username");
         $gender = $request->input("gender");

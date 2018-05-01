@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateSavedGameUserTable extends Migration
+class EtudesUserTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,15 +13,14 @@ class CreateSavedGameUserTable extends Migration
      */
     public function up()
     {
-        Schema::create('saved_game_user', function (Blueprint $table) {
+        Schema::create('etudes_user', function (Blueprint $table) {
             $table->increments('id');
             $table->unsignedInteger('user_id');
-            $table->unsignedInteger('saved_game_id');
-            $table->string('description', 255);
+            $table->unsignedInteger('etude_id');
 
-            $table->unique(['user_id', 'saved_game_id']);
 
-            $table->foreign('saved_game_id')->references('id')->on('saved_game');
+            $table->unique(['user_id', 'etude_id']);
+            $table->foreign('etude_id')->references('id')->on('etudes');
             $table->foreign('user_id')->references('id')->on('users');
         });
     }
@@ -33,6 +32,6 @@ class CreateSavedGameUserTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('saved_game_user');
+        Schema::dropIfExists('etudes_user');
     }
 }
