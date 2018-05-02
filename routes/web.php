@@ -32,6 +32,8 @@ Route::group(['middleware' => ['ajaxAuth']], function () {
 
         Route::get('/games/saved/{userId}', 'GameController@getSavedGames');
         Route::put('/games', 'GameController@saveGame');
+
+    Route::get('/etudes', 'EtudesController@getEtudes');
 });
 
 //--------------WEB SOCKETS----------------
