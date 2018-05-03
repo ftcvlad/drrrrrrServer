@@ -2,4 +2,4 @@
 set -e
 
 echo "Migrating database 'php artisan migrate --force'..."
-php artisan
+php artisan migrate --force
