@@ -24,7 +24,7 @@ Route::get('/user/{userId}', 'UserController@getUser');
 
 Route::put('/user/{userId}', 'UserController@updateUser');
 
-
+Route::get('/ping', 'PingController@getPing');
 
 //ajax requests requiring a cookie with session id
 Route::group(['middleware' => ['ajaxAuth']], function () {

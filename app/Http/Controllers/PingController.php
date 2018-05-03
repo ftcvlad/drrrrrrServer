@@ -9,7 +9,14 @@
 namespace App\Http\Controllers;
 
 
-class PingController
+class PingController extends Controller
 {
+
+
+    public function getPing()
+    {
+
+        return 'pong';
+    }
 
 }
