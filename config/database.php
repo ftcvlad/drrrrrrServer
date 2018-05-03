@@ -49,7 +49,7 @@ return [
             'unix_socket' => env('DB_SOCKET', ''),
 
             'username'=>'laravel',
-            'password'=>'LaHH5i2C7U3BvWJw',
+            'password'=>'LaHH5i2C7U3BvWJw',//dsafsdf
             'database'=>'default',
 
             'charset' => 'utf8mb4',
