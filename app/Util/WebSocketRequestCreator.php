@@ -46,7 +46,8 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $app = require __DIR__ . '/../../bootstrap/app.php';
         $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
 
-        $request = \Illuminate\Http\Request::create($route, 'GET', $params, $allCookies);
+        $host = env("APP_URL");
+        $request = \Illuminate\Http\Request::create($host.$route, 'GET', $params, $allCookies);
 
         // $con->send(json_encode(['ADDED TO REQUEST?!' => json_encode($request->cookies->all())]));
 
