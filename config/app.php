@@ -52,7 +52,7 @@ return [
     |
     */
 
-    'url' => env('APP_URL', 'http://localhost'),
+    'url' => env('APP_URL', 'http://laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com'),
 
     /*
     |--------------------------------------------------------------------------
