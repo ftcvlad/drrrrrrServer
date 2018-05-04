@@ -51,7 +51,7 @@ class WebSocketRequestCreator implements MessageComponentInterface
             'HTTP_HOST' => 'laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com'
         );
 
-        $request = \Illuminate\Http\Request::create($route, 'GET', $params, $allCookies, null, $server);
+        $request = \Illuminate\Http\Request::create($route, 'GET', $params, $allCookies, array(), $server);
 
         // $con->send(json_encode(['ADDED TO REQUEST?!' => json_encode($request->cookies->all())]));
 
