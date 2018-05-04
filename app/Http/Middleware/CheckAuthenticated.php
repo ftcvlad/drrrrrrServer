@@ -4,6 +4,7 @@ namespace App\Http\Middleware;
 use Illuminate\Support\Facades\Auth;
 use Closure;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cookie;
 use App\User;
 class CheckAuthenticated
 {
@@ -16,8 +17,9 @@ class CheckAuthenticated
      */
     public function handle($request, Closure $next)
     {
+        Log::info($_COOKIE['laravel_session']);
 
-        Log::info( User::where( 'id', 1 )->first()->username);
+
         if (!Auth::check()){
             Log::info('pizdec');
             return response()->json(['message' => 'Unauthorized!'], 401);
