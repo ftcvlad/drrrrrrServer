@@ -17,7 +17,7 @@ class CheckAuthenticated
      */
     public function handle($request, Closure $next)
     {
-        Log::info($_COOKIE['laravel_session']);
+       // Log::info($_COOKIE['laravel_session']);
 
 
         if (!Auth::check()){
