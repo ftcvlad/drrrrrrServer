@@ -12,7 +12,7 @@ services:
       - .:/srv/app
     links:
       - mysql
-      - redis
+ #     - redis
     environment:
       DB_HOST: mysql
       DB_DATABASE: laravel_docker

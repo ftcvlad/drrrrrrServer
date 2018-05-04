@@ -17,8 +17,9 @@ class CheckAuthenticated
      */
     public function handle($request, Closure $next)
     {
-       // Log::info($_COOKIE['laravel_session']);
-
+        Log::info($request->url());
+        Log::info(Cookie::get('laravel_session'));
+        Log::info('^^^^^^^^');
 
         if (!Auth::check()){
             Log::info('pizdec');
