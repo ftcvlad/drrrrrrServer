@@ -46,8 +46,12 @@ class WebSocketRequestCreator implements MessageComponentInterface
         $app = require __DIR__ . '/../../bootstrap/app.php';
         $kernel = $app->make(\Illuminate\Contracts\Http\Kernel::class);
 
-        $host = env("APP_URL");
-        $request = \Illuminate\Http\Request::create($host.$route, 'GET', $params, $allCookies);
+        //$host = env("APP_URL");
+        $server = array( 'SERVER_NAME' => 'laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com',
+            'HTTP_HOST' => 'laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com'
+        );
+
+        $request = \Illuminate\Http\Request::create($route, 'GET', $params, $allCookies, null, $server);
 
         // $con->send(json_encode(['ADDED TO REQUEST?!' => json_encode($request->cookies->all())]));
 
