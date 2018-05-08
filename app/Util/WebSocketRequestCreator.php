@@ -36,8 +36,11 @@ class WebSocketRequestCreator implements MessageComponentInterface
 
         $wsrequest = $con->httpRequest ;
         $cookies = Cookies::fromRequest($wsrequest)->getAll();
+        Log::info('====');
+        Log::info(count($cookies));
         $allCookies = array();
         foreach ($cookies as $cookie){
+            Log::info($cookie->getName());
             $allCookies[$cookie->getName()] = $cookie->getValue();
         }
 
