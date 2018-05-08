@@ -41,11 +41,11 @@ return [
 
         'mysql' => [
             'driver' => 'mysql',
-            'host' => env('DB_HOST', '10.130.31.95'),
-            'port' => env('DB_PORT', '3306'),
-            'database' => env('DB_DATABASE', 'default'),
-            'username' => env('DB_USERNAME', 'laravel'),
-            'password' => env('DB_PASSWORD', 'LaHH5i2C7U3BvWJw'),
+            'host' => env('DB_HOST', env('MYSQL_SERVICE_HOST')),
+            'port' => env('DB_PORT',  env('MYSQL_SERVICE_PORT')),
+            'database' => env('DB_DATABASE', env('MYSQL_DATABASE')),
+            'username' => env('DB_USERNAME', env('MYSQL_USER')),
+            'password' => env('DB_PASSWORD', env('MYSQL_PASSWORD')),
             'unix_socket' => env('DB_SOCKET', ''),
 
 //            'username'=>'laravel',
