@@ -15,7 +15,7 @@
 
     # production
     RewriteCond %{REQUEST_URI}  /ws            [NC]
-    RewriteCond %{HTTP_HOST} ^laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com
+    RewriteCond %{HTTP_HOST} ^laravel\-mysql\-persistent\-draughts.a3c1.starter\-us\-west\-1.openshiftapps.com
     RewriteRule (.*) ws://laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com:8090/ [P,L] #
 
 
