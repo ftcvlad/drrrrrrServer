@@ -25,7 +25,7 @@ class GameState
     function __construct($timeReserve)
     {
         $this->timeLeft = [$timeReserve, $timeReserve];
-        $this->boardState = $this->createStartTest2Grid();
+        $this->boardState = $this->createEtude1();
     }
 
 
@@ -41,6 +41,18 @@ class GameState
             [1, 0, 1, 0, 1, 0, 1, 0]];
     }
 
+
+    private function createEtude1()
+    {
+        return [[0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 0, -1, 0, 0, 0],
+                [0, -1, 0, 0, 0, 0, 0, -1],
+                [0, 0, -1, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, -1, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 0, 1, 0, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 0, 0]];
+    }
 
     private function createStartTestGrid()
     {

@@ -1,5 +1,4 @@
-docker run --name laravel-app --rm -p 8080:80 php7apachecheckers ***************** to run apache server with php
-docker-compose up --build **** after changes in dockerfile or vhost
+docker run --name laravel-app --rm -p 8080:80 php7apachecheckers ***************** to run apache server with phpdocker-compose up --build **** after changes in dockerfile or vhost
 
 docker-compose up ******  docker-compose.yml to start containers
 
