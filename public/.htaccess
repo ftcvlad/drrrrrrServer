@@ -8,14 +8,14 @@
 
 
     # development  RewriteCond TestString CondPattern [flags]   --- /
-    RewriteCond %{REQUEST_URI}  /ws            [NC] #REQUEST_URI always starts with slash
-    RewriteCond %{HTTP_HOST} ^localhost
-    RewriteRule (.*) ws://localhost:8090/ [P,L] #  removed from rewriterule as htaccess context (htaccess at /)
+    #RewriteCond %{REQUEST_URI}  /ws            [NC] #REQUEST_URI always starts with slash
+    #RewriteCond %{HTTP_HOST} ^localhost
+    #RewriteRule (.*) ws://localhost:8090/ [P,L] #  removed from rewriterule as htaccess context (htaccess at /)
 
 
     # production
     RewriteCond %{REQUEST_URI}  /ws            [NC]
-    RewriteCond %{HTTP_HOST} ^laravel\-mysql\-persistent\-draughts.a3c1.starter\-us\-west\-1.openshiftapps.com
+    #RewriteCond %{HTTP_HOST} ^laravel\-mysql\-persistent\-draughts.a3c1.starter\-us\-west\-1.openshiftapps.com #404 with slashes, 500 with ^laravel
     RewriteRule (.*) ws://laravel-mysql-persistent-draughts.a3c1.starter-us-west-1.openshiftapps.com:8090/ [P,L] #
 
 
