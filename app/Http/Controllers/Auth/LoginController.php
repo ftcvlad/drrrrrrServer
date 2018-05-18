@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Session;
+
 class LoginController extends Controller
 {
     /*
@@ -62,7 +63,7 @@ class LoginController extends Controller
 
 
     public function login(Request $request)
-    {
+    {Log::info('vse . konec!!!!');
         $validator = $this->validator($request->all());
         if ($validator->fails()){
             Log::info('validator!');
