@@ -63,10 +63,9 @@ class LoginController extends Controller
 
 
     public function login(Request $request)
-    {Log::info('vse . konec!!!!');
+    {
         $validator = $this->validator($request->all());
         if ($validator->fails()){
-            Log::info('validator!');
             return response()->json(['message' => 'Error!'], 401);
         }
         else{

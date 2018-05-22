@@ -18,6 +18,7 @@ services:
       DB_DATABASE: laravel_docker
       DB_USERNAME: app
       DB_PASSWORD: password
+      SESSION_DOMAIN: localhost
 #      REDIS_HOST: redis
 #      SESSION_DRIVER: redis
 #      CACHE_DRIVER: redis
