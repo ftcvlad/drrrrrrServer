@@ -25,7 +25,7 @@ class GameState
     function __construct($timeReserve)
     {
         $this->timeLeft = [$timeReserve, $timeReserve];
-        $this->boardState = $this->createEtude1();
+        $this->boardState = $this->createStartGrid();
     }
 
 
